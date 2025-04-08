@@ -1,0 +1,9 @@
+# 忽略所有.class文件
+
+# 忽略build目录及其内容
+node_modules/
+
+# 忽略特定文件
+send_eth.js
+
+# 例外规则（保留Debug目录下的important.txt）
