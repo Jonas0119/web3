@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- You can @ files here
+- You can use markdown but dont have to
+每次修改代码后对这次修改进行总结，列出修改的思路、文件、并写入至README文件

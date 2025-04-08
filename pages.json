@@ -1,0 +1,67 @@
+{
+	"pages": [
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "Web3钱包",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/wallet/manage",
+			"style": {
+				"navigationBarTitleText": "账号管理",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/wallet/create",
+			"style": {
+				"navigationBarTitleText": "创建账号",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/wallet/import",
+			"style": {
+				"navigationBarTitleText": "导入账号",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/wallet/mnemonic",
+			"style": {
+				"navigationBarTitleText": "助记词",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/wallet/verify-mnemonic",
+			"style": {
+				"navigationBarTitleText": "验证助记词",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/transfer/transfer",
+			"style": {
+				"navigationBarTitleText": "转账",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/receive/receive",
+			"style": {
+				"navigationBarTitleText": "收款",
+				"navigationStyle": "custom"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "Web3钱包",
+		"navigationBarBackgroundColor": "#FFFFFF",
+		"backgroundColor": "#F8F8F8"
+	},
+	"uniIdRouter": {}
+}

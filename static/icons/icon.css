@@ -1,0 +1,60 @@
+/* 币种图标样式 */
+.icon-bsc {
+  background: linear-gradient(135deg, #F3BA2F 0%, #F0B90B 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 24rpx;
+}
+
+.icon-piao {
+  background: linear-gradient(135deg, #627EEA 0%, #3C5BD9 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 24rpx;
+}
+
+.icon-usdo {
+  background: linear-gradient(135deg, #26A17B 0%, #1A9A71 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 24rpx;
+}
+
+.icon-dimei {
+  background: linear-gradient(135deg, #FF5000 0%, #FF7E50 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 24rpx;
+}
+
+.icon-mu {
+  background: linear-gradient(135deg, #8A2BE2 0%, #A35EFF 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 24rpx;
+}
+
+.icon-pinfr {
+  background: linear-gradient(135deg, #1D8BF1 0%, #4DA8FF 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 24rpx;
+} 
