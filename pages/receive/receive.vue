@@ -50,7 +50,7 @@
 
 <script>
 import tkiQrcode from 'tki-qrcode'
-import { loadWalletFromStorage } from '@/utils/web3Utils.js'
+import { loadWalletFromStorage, formatAddress } from '@/utils/web3Utils.js'
 
 export default {
 	components: {
@@ -71,6 +71,9 @@ export default {
 	methods: {
 		handleBack() {
 			uni.navigateBack();
+		},
+		formatAddress(address) {
+			return formatAddress(address);
 		},
 		async handleCopy() {
 			if (!this.walletAddress) {

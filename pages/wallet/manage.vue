@@ -21,7 +21,7 @@
 					<crypto-icon :symbol="wallet.symbol" :size="80" />
 					<view class="wallet-details">
 						<view class="wallet-name">{{wallet.name}}</view>
-						<view class="wallet-address">{{wallet.address}}</view>
+						<view class="wallet-address">{{formatAddress(wallet.address)}}</view>
 					</view>
 				</view>
 				<view class="wallet-amount">
@@ -58,7 +58,8 @@ import {
 	getEthBalance,
 	formatBalance,
 	calculateTokenValue,
-	saveWalletToStorage
+	saveWalletToStorage,
+	formatAddress
 } from '../../utils/web3Utils.js';
 
 export default {
@@ -151,6 +152,10 @@ export default {
 			uni.navigateTo({
 				url: '/pages/wallet/create'
 			});
+		},
+
+		formatAddress(address) {
+			return formatAddress(address);
 		},
 		
 		handleImportWallet() {

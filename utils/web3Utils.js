@@ -328,4 +328,11 @@ export const generateMnemonicAndWallet = async () => {
             error: error.message || '生成失败'
         };
     }
+};
+
+// 格式化地址显示
+export const formatAddress = (address) => {
+    if (!address) return '';
+    if (address.length < 15) return address;
+    return `${address.slice(0, 20)}...${address.slice(-10)}`;
 }; 

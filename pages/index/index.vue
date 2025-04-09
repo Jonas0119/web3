@@ -58,7 +58,7 @@
 							{{asset.name}} 
 							<text class="asset-trend-icon">{{asset.trendIcon}}</text>
 						</view>
-						<view class="asset-address">{{asset.address}}</view>
+						<view class="asset-address">{{formatAddress(asset.address)}}</view>
 					</view>
 				</view>
 				<view class="asset-amount">
@@ -79,7 +79,8 @@ import {
 	saveWalletToStorage,
 	getEthBalance,
 	formatBalance,
-	calculateTokenValue
+	calculateTokenValue,
+	formatAddress
 } from '../../utils/web3Utils.js';
 
 export default {
@@ -195,6 +196,9 @@ export default {
 					});
 				}
 			});
+		},
+		formatAddress(address) {
+			return formatAddress(address);
 		}
 	},
 	onLoad() {
