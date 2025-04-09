@@ -7,3 +7,5 @@ node_modules/
 send_eth.js
 
 # 例外规则（保留Debug目录下的important.txt）
+/node_modules
+/node_modules
