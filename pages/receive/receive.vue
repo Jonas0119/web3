@@ -11,7 +11,7 @@
 		<!-- 提示信息 -->
 		<view class="warning-tip">
 			<text class="warning-icon">&#9432;</text>
-			<text class="warning-text">仅向该地址转入BSC/BEP20相关资产</text>
+			<text class="warning-text">仅向该地址转入ETH相关资产</text>
 		</view>
 		
 		<!-- 二维码区域 -->
@@ -35,7 +35,9 @@
 		<!-- 地址信息 -->
 		<view class="address-section">
 			<view class="address-label">收款账户:</view>
-			<view class="address-value">{{walletAddress}}</view>
+			<view class="address-value" @longpress="handleCopy">{{walletAddress}}</view>
+			<!-- 隐藏的文本区域用于复制 -->
+			<textarea class="hidden-textarea" :value="walletAddress" ref="hiddenTextarea"/>
 		</view>
 		
 		<!-- 复制按钮 -->
@@ -48,6 +50,7 @@
 
 <script>
 import tkiQrcode from 'tki-qrcode'
+import { loadWalletFromStorage } from '@/utils/web3Utils.js'
 
 export default {
 	components: {
@@ -55,30 +58,156 @@ export default {
 	},
 	data() {
 		return {
-			walletAddress: '0x11030x1103dfjkejkjkdkfj99474859jfdjkj0x11030x1103dfjkejkjkdkfj99'
+			walletAddress: ''
+		}
+	},
+	onShow() {
+		// 获取当前活动钱包地址
+		const wallet = loadWalletFromStorage();
+		if (wallet && wallet.address) {
+			this.walletAddress = wallet.address;
 		}
 	},
 	methods: {
 		handleBack() {
 			uni.navigateBack();
 		},
-		handleCopy() {
-			uni.setClipboardData({
-				data: this.walletAddress,
-				success: () => {
-					uni.showToast({
-						title: '账户信息已复制',
-						icon: 'success',
-						duration: 2000,
-						success: () => {
-							// 2秒后返回钱包管理页面
-							setTimeout(() => {
-								uni.navigateBack({
-									delta: 1
-								});
-							}, 2000);
-						}
+		async handleCopy() {
+			if (!this.walletAddress) {
+				uni.showToast({
+					title: '地址无效',
+					icon: 'none'
+				});
+				return;
+			}
+			
+			try {
+				// H5环境
+				// #ifdef H5
+				await this.h5Copy(this.walletAddress);
+				// #endif
+
+				// APP环境
+				// #ifdef APP-PLUS
+				await this.appCopy(this.walletAddress);
+				// #endif
+
+				// 小程序环境
+				// #ifdef MP
+				await this.mpCopy(this.walletAddress);
+				// #endif
+				
+				// 复制成功后的处理
+				this.handleCopySuccess();
+			} catch (error) {
+				console.error('复制失败:', error);
+				// 如果常规复制失败，尝试创建临时输入框复制
+				await this.fallbackCopy(this.walletAddress);
+			}
+		},
+		
+		// H5环境复制
+		h5Copy(text) {
+			return new Promise((resolve, reject) => {
+				const textarea = document.createElement('textarea');
+				textarea.value = text;
+				textarea.style.position = 'fixed';
+				textarea.style.left = '0';
+				textarea.style.top = '0';
+				textarea.style.opacity = '0';
+				document.body.appendChild(textarea);
+				textarea.focus();
+				textarea.select();
+				
+				try {
+					document.execCommand('copy');
+					document.body.removeChild(textarea);
+					resolve();
+				} catch (err) {
+					document.body.removeChild(textarea);
+					reject(err);
+				}
+			});
+		},
+		
+		// APP环境复制
+		appCopy(text) {
+			return new Promise((resolve, reject) => {
+				try {
+					// 优先使用plus接口
+					if (window.plus) {
+						plus.runtime.copyToClipboard(text);
+						resolve();
+						return;
+					}
+					
+					// 降级使用uni接口
+					uni.setClipboardData({
+						data: text,
+						success: resolve,
+						fail: reject
 					});
+				} catch (error) {
+					reject(error);
+				}
+			});
+		},
+		
+		// 小程序环境复制
+		mpCopy(text) {
+			return new Promise((resolve, reject) => {
+				uni.setClipboardData({
+					data: text,
+					success: resolve,
+					fail: reject
+				});
+			});
+		},
+		
+		// 降级复制方案
+		async fallbackCopy(text) {
+			try {
+				// 创建临时输入框
+				const input = document.createElement('input');
+				input.setAttribute('readonly', 'readonly');
+				input.setAttribute('value', text);
+				input.style.position = 'absolute';
+				input.style.left = '-9999px';
+				document.body.appendChild(input);
+				
+				// 选择并复制
+				input.select();
+				input.setSelectionRange(0, text.length);
+				document.execCommand('copy');
+				document.body.removeChild(input);
+				
+				// 显示成功提示
+				this.handleCopySuccess();
+			} catch (error) {
+				console.error('降级复制也失败了:', error);
+				// 提示用户手动复制
+				uni.showModal({
+					title: '复制失败',
+					content: '请手动长按以下地址进行复制：\n\n' + text,
+					confirmText: '我已复制',
+					success: (res) => {
+						if (res.confirm) {
+							this.handleCopySuccess();
+						}
+					}
+				});
+			}
+		},
+		
+		handleCopySuccess() {
+			uni.showToast({
+				title: '地址已复制',
+				icon: 'success',
+				duration: 2000,
+				success: () => {
+					setTimeout(() => {
+						uni.navigateBack();
+					}, 2000);
 				}
 			});
 		}
@@ -159,6 +288,8 @@ export default {
 	font-size: 28rpx;
 	color: #666666;
 	word-break: break-all;
+	user-select: text;
+	-webkit-user-select: text;
 }
 
 .copy-button {
@@ -178,6 +309,15 @@ export default {
 
 .copy-text {
 	font-size: 32rpx;
+}
+
+.hidden-textarea {
+	position: absolute;
+	left: -9999px;
+	top: -9999px;
+	opacity: 0;
+	width: 1px;
+	height: 1px;
 }
 
 /* 字体图标 */

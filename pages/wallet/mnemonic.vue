@@ -20,11 +20,19 @@
 			
 			<!-- 助记词展示 -->
 			<view class="mnemonic-box">
-				<view class="mnemonic-words">
-					<view class="word-item" v-for="(word, index) in mnemonicWords" :key="index">
-						<text class="word-text">{{word || '点击下方选择'}}</text>
+				<view class="mnemonic-words" @longpress="handleLongPress">
+					<view class="word-item" 
+						v-for="(word, index) in mnemonicWords" 
+						:key="index"
+						@click="handleWordClick(word)">
+						<text class="word-text" user-select selectable>{{word || '点击下方选择'}}</text>
 					</view>
 				</view>
+				<!-- 隐藏的助记词文本，用于复制 -->
+				<textarea 
+					class="hidden-textarea" 
+					:value="mnemonicWords.join(' ')" 
+					ref="hiddenTextarea"/>
 			</view>
 			
 			<!-- 警告文本 -->
@@ -51,28 +59,29 @@
 </template>
 
 <script>
+import { saveWalletToStorage, loadWalletsFromStorage } from '@/utils/web3Utils.js';
+
 export default {
 	data() {
 		return {
 			walletInfo: null,
-			mnemonicWords: [
-				'abandon', 'ability', 'able', 'about', 'above', 'absent',
-				'absorb', 'abstract', 'absurd', 'abuse', 'access', 'accident'
-			]
+			mnemonicWords: []
 		}
 	},
-	onLoad() {
-		// 监听并接收助记词数据
-		uni.$on('walletCreated', (data) => {
-			if (data.mnemonic) {
-				this.mnemonicWords = data.mnemonic;
+	onShow() {
+		// 从全局变量获取数据
+		const app = getApp();
+		if (app.globalData && app.globalData.tempWalletData) {
+			const { mnemonic, walletInfo } = app.globalData.tempWalletData;
+			if (mnemonic && mnemonic.length > 0) {
+				this.mnemonicWords = mnemonic;
 			}
-			this.walletInfo = data.walletInfo;
-		});
-	},
-	onUnload() {
-		// 页面卸载时移除事件监听
-		uni.$off('walletCreated');
+			if (walletInfo) {
+				this.walletInfo = walletInfo;
+			}
+			// 使用完后清除临时数据
+			app.globalData.tempWalletData = null;
+		}
 	},
 	methods: {
 		handleBack() {
@@ -88,36 +97,210 @@ export default {
 				}
 			});
 		},
-		handleCopy() {
+		async handleCopy() {
+			if (!this.mnemonicWords || this.mnemonicWords.length === 0) {
+				uni.showToast({
+					title: '助记词无效',
+					icon: 'none'
+				});
+				return;
+			}
+
+			if (!this.walletInfo) {
+				uni.showToast({
+					title: '钱包信息无效',
+					icon: 'none'
+				});
+				return;
+			}
+
+			console.log('准备复制助记词和保存钱包信息');
+			
+			// 1. 先保存钱包信息
+			const saveResult = saveWalletToStorage(this.walletInfo);
+			if (!saveResult) {
+				uni.showToast({
+					title: '钱包保存失败',
+					icon: 'none'
+				});
+				return;
+			}
+			
+			// 2. 准备助记词文本
 			const mnemonicString = this.mnemonicWords.join(' ');
-			uni.setClipboardData({
-				data: mnemonicString,
-				success: () => {
-					uni.showToast({
-						title: '助记词已复制，钱包创建成功',
-						icon: 'success',
-						duration: 2000,
-						success: () => {
-							// 延迟2秒后返回钱包列表页面
-							setTimeout(() => {
-								uni.navigateBack({
-									delta: 2 // 返回到钱包管理页面
-								});
-							}, 2000);
-						}
-					});
+			
+			// 3. 尝试复制
+			try {
+				// H5环境
+				// #ifdef H5
+				await this.h5Copy(mnemonicString);
+				// #endif
+
+				// APP环境
+				// #ifdef APP-PLUS
+				await this.appCopy(mnemonicString);
+				// #endif
+
+				// 小程序环境
+				// #ifdef MP
+				await this.mpCopy(mnemonicString);
+				// #endif
+				
+				// 复制成功后的处理
+				this.handleCopySuccess();
+			} catch (error) {
+				console.error('复制失败:', error);
+				// 如果常规复制失败，尝试创建临时输入框复制
+				await this.fallbackCopy(mnemonicString);
+			}
+		},
+		
+		// H5环境复制
+		h5Copy(text) {
+			return new Promise((resolve, reject) => {
+				const textarea = document.createElement('textarea');
+				textarea.value = text;
+				textarea.style.position = 'fixed';
+				textarea.style.left = '0';
+				textarea.style.top = '0';
+				textarea.style.opacity = '0';
+				document.body.appendChild(textarea);
+				textarea.focus();
+				textarea.select();
+				
+				try {
+					document.execCommand('copy');
+					document.body.removeChild(textarea);
+					resolve();
+				} catch (err) {
+					document.body.removeChild(textarea);
+					reject(err);
 				}
 			});
 		},
-		handleVerify() {
-			// 跳转到验证助记词页面
-			uni.$emit('mnemonicToVerify', {
-				mnemonic: this.mnemonicWords,
-				walletInfo: this.walletInfo
+		
+		// APP环境复制
+		appCopy(text) {
+			return new Promise((resolve, reject) => {
+				try {
+					// 优先使用plus接口
+					if (window.plus) {
+						plus.runtime.copyToClipboard(text);
+						resolve();
+						return;
+					}
+					
+					// 降级使用uni接口
+					uni.setClipboardData({
+						data: text,
+						success: resolve,
+						fail: reject
+					});
+				} catch (error) {
+					reject(error);
+				}
 			});
+		},
+		
+		// 小程序环境复制
+		mpCopy(text) {
+			return new Promise((resolve, reject) => {
+				uni.setClipboardData({
+					data: text,
+					success: resolve,
+					fail: reject
+				});
+			});
+		},
+		
+		// 降级复制方案
+		async fallbackCopy(text) {
+			try {
+				// 创建临时输入框
+				const input = document.createElement('input');
+				input.setAttribute('readonly', 'readonly');
+				input.setAttribute('value', text);
+				input.style.position = 'absolute';
+				input.style.left = '-9999px';
+				document.body.appendChild(input);
+				
+				// 选择并复制
+				input.select();
+				input.setSelectionRange(0, text.length);
+				document.execCommand('copy');
+				document.body.removeChild(input);
+				
+				// 显示成功提示
+				this.handleCopySuccess();
+			} catch (error) {
+				console.error('降级复制也失败了:', error);
+				// 提示用户手动复制
+				uni.showModal({
+					title: '复制失败',
+					content: '请手动长按以下助记词进行复制：\\n\\n' + text,
+					confirmText: '我已复制',
+					success: (res) => {
+						if (res.confirm) {
+							this.handleCopySuccess();
+						}
+					}
+				});
+			}
+		},
+		
+		handleCopySuccess() {
+			// 验证钱包是否保存成功
+			const wallets = loadWalletsFromStorage();
+			const currentWallet = wallets.find(w => w.address === this.walletInfo.address);
 			
-			uni.navigateTo({
-				url: '/pages/wallet/verify-mnemonic'
+			if (!currentWallet) {
+				uni.showModal({
+					title: '警告',
+					content: '钱包信息可能未正确保存，是否继续？',
+					success: (res) => {
+						if (res.confirm) {
+							this.navigateBack();
+						}
+					}
+				});
+				return;
+			}
+			
+			uni.showToast({
+				title: '助记词已复制，钱包创建成功',
+				icon: 'success',
+				duration: 2000,
+				success: () => {
+					setTimeout(() => {
+						this.navigateBack();
+					}, 2000);
+				}
+			});
+		},
+		
+		navigateBack() {
+			uni.navigateBack({
+				delta: 2 // 返回到钱包管理页面
+			});
+		},
+		
+		// 长按复制处理
+		handleLongPress() {
+			const mnemonicString = this.mnemonicWords.join(' ');
+			// 使用与handleCopy相同的复制逻辑
+			this.handleCopy();
+		},
+		
+		handleWordClick(word) {
+			// 点击单个词时也可以复制
+			uni.setClipboardData({
+				data: word,
+				success: () => {
+					uni.showToast({
+						title: '已复制：' + word,
+						icon: 'none'
+					});
+				}
 			});
 		}
 	}
@@ -221,6 +404,8 @@ page {
 .word-text {
 	font-size: 28rpx;
 	color: #999;
+	user-select: text;
+	-webkit-user-select: text;
 }
 
 .word-text:not(:empty) {
@@ -293,5 +478,14 @@ page {
 	font-style: normal;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
+}
+
+.hidden-textarea {
+	position: absolute;
+	left: -9999px;
+	top: -9999px;
+	opacity: 0;
+	width: 1px;
+	height: 1px;
 }
 </style> 

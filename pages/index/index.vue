@@ -1,4 +1,4 @@
-<template>
+60.29.255.74:9018<template>
 	<view class="wallet-container">		
 		<!-- 顶部导航栏 -->
 		<view class="navbar">
@@ -13,7 +13,7 @@
 			<!-- 钱包卡片 -->
 			<view class="wallet-card">
 				<view class="wallet-card-header">
-					<view class="wallet-name">主账户</view>
+					<view class="wallet-name">{{walletName}}</view>
 					<view class="wallet-details" @click="handleManageWallet">账户管理 ></view>
 				</view>
 				
@@ -71,63 +71,99 @@
 </template>
 
 <script>
+import {
+	initWeb3,
+	createNewWallet,
+	loadWalletFromStorage,
+	loadWalletsFromStorage,
+	saveWalletToStorage,
+	getEthBalance,
+	formatBalance,
+	calculateTokenValue
+} from '../../utils/web3Utils.js';
+
 export default {
 	data() {
 		return {
-			balanceAmount: "289905",
+			walletInfo: null,
+			balanceAmount: "0.0000",
+			walletName: "",
 			assetsList: [
 				{
-					name: "BSC-1",
-					symbol: "bsc",
+					name: "ETH",
+					symbol: "eth",
 					trendIcon: "↗",
-					address: "0x...1103($0.002081)",
-					balance: "0",
-					value: "$0"
-				},
-				{
-					name: "Piao",
-					symbol: "piao",
-					trendIcon: "↗",
-					address: "0x...1103($0.002081)",
-					balance: "0",
-					value: "$0"
-				},
-				{
-					name: "USDO",
-					symbol: "usdo",
-					trendIcon: "↗",
-					address: "0x...1103($0.002081)",
-					balance: "0",
-					value: "$0"
-				},
-				{
-					name: "Dimei",
-					symbol: "dimei",
-					trendIcon: "↗",
-					address: "0x...1103($0.002081)",
-					balance: "0",
-					value: "$0"
-				},
-				{
-					name: "Mu",
-					symbol: "mu",
-					trendIcon: "↗",
-					address: "0x...1103($0.002081)",
-					balance: "0",
-					value: "$0"
-				},
-				{
-					name: "PinfR",
-					symbol: "pinfr",
-					trendIcon: "↗",
-					address: "0x...1103($0.002081)",
-					balance: "0",
-					value: "$0"
+					address: "",
+					balance: "0.0000",
+					value: "0.0000"
 				}
-			]
+			],
+			refreshInterval: null
 		}
 	},
 	methods: {
+		// 初始化钱包
+		async initWallet() {
+			try {
+				const wallet = loadWalletFromStorage();
+				if (!wallet) {
+					const newWallet = createNewWallet();
+					if (saveWalletToStorage(newWallet)) {
+						this.walletInfo = newWallet;
+					} else {
+						throw new Error('保存钱包失败');
+					}
+				} else {
+					this.walletInfo = wallet;
+					const wallets = loadWalletsFromStorage();
+					if (wallets.length <= 0) {
+						//saveWalletToStorage(wallet);
+						console.log("钱包列表为空");
+					}
+				}
+				
+				if (this.walletInfo) {
+					this.walletName = this.walletInfo.name || '主账户';
+					await this.updateBalances();
+				}
+			} catch (error) {
+				console.error('初始化钱包失败:', error);
+				uni.showToast({
+					title: '初始化钱包失败',
+					icon: 'none'
+				});
+			}
+		},
+
+		// 更新所有余额
+		async updateBalances() {
+			if (!this.walletInfo || !this.walletInfo.address) {
+				return;
+			}
+
+			try {
+				const ethBalance = await getEthBalance(this.walletInfo.address);
+				if (ethBalance) {
+					const formattedBalance = formatBalance(ethBalance);
+					const value = await calculateTokenValue(formattedBalance);
+					
+					// 更新ETH余额
+					this.assetsList[0].balance = formattedBalance;
+					this.assetsList[0].value = value;
+					this.assetsList[0].address = this.walletInfo.address;
+					
+					// 更新总余额显示
+					this.balanceAmount = value;
+				}
+			} catch (error) {
+				console.error('更新余额失败:', error);
+				uni.showToast({
+					title: '更新余额失败',
+					icon: 'none'
+				});
+			}
+		},
+
 		handleTransfer() {
 			uni.navigateTo({
 				url: '../transfer/transfer'
@@ -160,6 +196,34 @@ export default {
 				}
 			});
 		}
+	},
+	onLoad() {
+		this.initWallet();
+		if (this.refreshInterval) {
+			clearInterval(this.refreshInterval);
+		}
+		this.refreshInterval = setInterval(() => {
+			if (this.walletInfo) {
+				this.updateBalances();
+			}
+		}, 600000);
+	},
+	onUnload() {
+		if (this.refreshInterval) {
+			clearInterval(this.refreshInterval);
+			this.refreshInterval = null;
+		}
+	},
+	onPullDownRefresh() {
+		this.updateBalances().then(() => {
+			uni.stopPullDownRefresh();
+		}).catch(() => {
+			uni.stopPullDownRefresh();
+		});
+	},
+	onShow() {
+		// 每次显示页面时重新加载钱包列表，以更新新创建的钱包
+		this.initWallet();
 	}
 }
 </script>

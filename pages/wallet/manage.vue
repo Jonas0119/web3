@@ -13,7 +13,10 @@
 		
 		<!-- 钱包列表 -->
 		<view class="wallet-list">
-			<view class="wallet-item" v-for="(wallet, index) in walletList" :key="index">
+			<view class="wallet-item" 
+				v-for="(wallet, index) in walletList" 
+				:key="index"
+				@click="handleSelectWallet(wallet)">
 				<view class="wallet-info">
 					<crypto-icon :symbol="wallet.symbol" :size="80" />
 					<view class="wallet-details">
@@ -24,7 +27,7 @@
 				<view class="wallet-amount">
 					<view class="wallet-balance">${{wallet.balance}}</view>
 				</view>
-				<view class="delete-icon" @click="handleDeleteWallet(index)">
+				<view class="delete-icon" @click.stop="handleDeleteWallet(index)">
 					<text class="iconfont">&#xe6a5;</text>
 				</view>
 			</view>
@@ -49,87 +52,120 @@
 </template>
 
 <script>
+import {
+	loadWalletsFromStorage,
+	deleteWallet,
+	getEthBalance,
+	formatBalance,
+	calculateTokenValue,
+	saveWalletToStorage
+} from '../../utils/web3Utils.js';
+
 export default {
 	data() {
 		return {
 			isShowCreateModal: false,
-			walletList: [
-				{
-					name: "BSC账户",
-					symbol: "bsc",
-					address: "0xD484D484D484...1af3",
-					balance: "0.0000"
-				},
-				{
-					name: "Piao账户",
-					symbol: "piao",
-					address: "0xD484D484D484...1af3",
-					balance: "0.0000"
-				},
-				{
-					name: "Dimei账户",
-					symbol: "dimei",
-					address: "0xD484D484D484...1af3",
-					balance: "0.0000"
-				},
-				{
-					name: "USDT账户",
-					symbol: "usdo",
-					address: "0xD484D484D484...1af3",
-					balance: "0.0000"
-				},
-				{
-					name: "PinfR账户",
-					symbol: "pinfr",
-					address: "0xD484D484D484...1af3",
-					balance: "0.0000"
-				},
-				{
-					name: "PinfR账户",
-					symbol: "pinfr",
-					address: "0xD484D484D484...1af3",
-					balance: "0.0000"
-				}
-			]
+			walletList: []
 		}
 	},
 	methods: {
+		// 加载钱包列表
+		async loadWallets() {
+			const wallets = loadWalletsFromStorage();
+			// 获取每个钱包的最新余额
+			for (let wallet of wallets) {
+				const balance = await getEthBalance(wallet.address);
+				const formattedBalance = formatBalance(balance);
+				const value = await calculateTokenValue(formattedBalance);
+				wallet.balance = value;
+			}
+			this.walletList = wallets;
+		},
+		
 		handleBack() {
 			uni.navigateBack();
 		},
+		
 		toggleCreateModal() {
 			this.isShowCreateModal = true;
 		},
+		
 		hideCreateOptions() {
 			this.isShowCreateModal = false;
 		},
-		handleDeleteWallet(index) {
+		
+		// 选择钱包
+		handleSelectWallet(wallet) {
+			// 保存选中的钱包作为当前活跃钱包
+			const saveResult = saveWalletToStorage(wallet);
+			console.log('新账号为:', wallet.address);
+			if (saveResult) {
+				uni.showToast({
+					title: '切换账号成功',
+					icon: 'success',
+					duration: 1500,
+					success: () => {
+						setTimeout(() => {
+							// 返回首页
+							uni.navigateBack({
+								delta: 1
+							});
+						}, 1500);
+					}
+				});
+			} else {
+				uni.showToast({
+					title: '切换账号失败',
+					icon: 'none'
+				});
+			}
+		},
+		
+		// 删除钱包时阻止事件冒泡
+		async handleDeleteWallet(index) {
+			const wallet = this.walletList[index];
 			uni.showModal({
 				title: '确认删除',
 				content: '确定要删除此钱包吗？此操作不可逆，请确保已备份助记词或私钥。',
 				success: (res) => {
 					if (res.confirm) {
-						this.walletList.splice(index, 1);
-						uni.showToast({
-							title: '删除成功',
-							icon: 'success'
-						});
+						if (deleteWallet(wallet.address)) {
+							this.walletList.splice(index, 1);
+							uni.showToast({
+								title: '删除成功',
+								icon: 'success'
+							});
+						} else {
+							uni.showToast({
+								title: '删除失败',
+								icon: 'none'
+							});
+						}
 					}
 				}
 			});
 		},
+		
 		handleCreateWallet() {
 			this.hideCreateOptions();
 			uni.navigateTo({
 				url: '/pages/wallet/create'
 			});
 		},
+		
 		handleImportWallet() {
 			this.hideCreateOptions();
 			uni.navigateTo({
 				url: '/pages/wallet/import'
 			});
 		}
+	},
+	onLoad() {
+		this.loadWallets();
+	},
+	onShow() {
+		// 每次显示页面时重新加载钱包列表，以更新新创建的钱包
+		this.loadWallets();
 	}
 }
 </script>

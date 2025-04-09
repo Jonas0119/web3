@@ -81,11 +81,14 @@
 </template>
 
 <script>
+import { Wallet } from '@ethersproject/wallet';
+import { saveWalletToStorage } from '@/utils/web3Utils.js';
+
 export default {
 	data() {
 		return {
-			importType: 'mnemonic', // 导入方式：mnemonic, privateKey
-			mnemonicWords: new Array(12).fill(''), // 12个助记词数组
+			importType: 'privateKey', // 默认选择私钥导入
+			mnemonicWords: new Array(12).fill(''),
 			privateKeyInput: '',
 			walletName: ''
 		}
@@ -131,58 +134,109 @@ export default {
 				title: '导入中...'
 			});
 			
-			// 模拟导入钱包过程
-			setTimeout(() => {
+			try {
+				// 根据不同导入方式处理
+				if (this.importType === 'mnemonic') {
+					// 处理助记词导入
+					this.importByMnemonic();
+				} else if (this.importType === 'privateKey') {
+					// 处理私钥导入
+					this.importByPrivateKey();
+				}
+			} catch (error) {
 				uni.hideLoading();
+				uni.showToast({
+					title: '导入失败：' + error.message,
+					icon: 'none'
+				});
+			}
+		},
+		async importByMnemonic() {
+			try {
+				// 验证助记词
+				const mnemonic = this.mnemonicWords.join(' ').toLowerCase();
+				const wallet = Wallet.fromMnemonic(mnemonic);
 				
-				try {
-					// 根据不同导入方式处理
-					if (this.importType === 'mnemonic') {
-						// 处理助记词导入
-						this.importByMnemonic();
-					} else if (this.importType === 'privateKey') {
-						// 处理私钥导入
-						this.importByPrivateKey();
+				// 构建钱包信息
+				const walletInfo = {
+					name: this.walletName,
+					address: wallet.address,
+					privateKey: wallet.privateKey,
+					createTime: new Date().getTime(),
+					symbol: 'eth'
+				};
+				
+				// 保存钱包信息
+				const saveResult = saveWalletToStorage(walletInfo);
+				
+				if (!saveResult) {
+					throw new Error('保存钱包失败');
+				}
+				
+				uni.hideLoading();
+				uni.showToast({
+					title: '导入成功',
+					icon: 'success',
+					duration: 2000,
+					success: () => {
+						setTimeout(() => {
+							uni.navigateBack();
+						}, 2000);
 					}
-				} catch (error) {
-					uni.showToast({
-						title: '导入失败：' + error.message,
-						icon: 'none'
-					});
-				}
-			}, 2000);
+				});
+			} catch (error) {
+				uni.hideLoading();
+				uni.showToast({
+					title: '导入失败：' + error.message,
+					icon: 'none'
+				});
+			}
 		},
-		importByMnemonic() {
-			// 模拟助记词导入成功
-			uni.showToast({
-				title: '导入成功',
-				icon: 'success',
-				duration: 2000,
-				success: () => {
-					// 2秒后返回钱包管理页面
-					setTimeout(() => {
-						uni.navigateBack({
-							delta: 1
-						});
-					}, 2000);
+		async importByPrivateKey() {
+			try {
+				// 验证私钥格式
+				let privateKey = this.privateKeyInput.trim();
+				if (!privateKey.startsWith('0x')) {
+					privateKey = '0x' + privateKey;
 				}
-			});
-		},
-		importByPrivateKey() {
-			// 模拟私钥导入成功
-			uni.showToast({
-				title: '导入成功',
-				icon: 'success',
-				duration: 2000,
-				success: () => {
-					// 2秒后返回钱包管理页面
-					setTimeout(() => {
-						uni.navigateBack({
-							delta: 1
-						});
-					}, 2000);
+				
+				// 从私钥创建钱包
+				const wallet = new Wallet(privateKey);
+				
+				// 构建钱包信息
+				const walletInfo = {
+					name: this.walletName,
+					address: wallet.address,
+					privateKey: wallet.privateKey,
+					createTime: new Date().getTime(),
+					symbol: 'eth'
+				};
+				
+				// 保存钱包信息
+				const saveResult = saveWalletToStorage(walletInfo);
+				
+				if (!saveResult) {
+					throw new Error('保存钱包失败');
 				}
-			});
+				
+				uni.hideLoading();
+				uni.showToast({
+					title: '导入成功',
+					icon: 'success',
+					duration: 2000,
+					success: () => {
+						setTimeout(() => {
+							uni.navigateBack();
+						}, 2000);
+					}
+				});
+			} catch (error) {
+				uni.hideLoading();
+				uni.showToast({
+					title: '导入失败：' + error.message,
+					icon: 'none'
+				});
+			}
 		},
 		handleMnemonicInput() {
 			// 清理每个单词的空格

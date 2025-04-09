@@ -31,6 +31,8 @@
 </template>
 
 <script>
+import { generateMnemonicAndWallet } from '@/utils/web3Utils.js';
+
 export default {
 	data() {
 		return {
@@ -46,7 +48,7 @@ export default {
 		handleBack() {
 			uni.navigateBack();
 		},
-		handleCreate() {
+		async handleCreate() {
 			if (!this.isFormValid) {
 				if (this.walletName.trim() === '') {
 					uni.showToast({
@@ -58,39 +60,45 @@ export default {
 				return;
 			}
 			
-			// 模拟创建钱包流程
+			// 显示加载中
 			uni.showLoading({
 				title: '创建中...'
 			});
 			
-			// 延迟2秒模拟创建过程
-			setTimeout(() => {
-				uni.hideLoading();
+			try {
+				// 生成助记词和钱包
+				const result = await generateMnemonicAndWallet();
 				
-				// 模拟助记词和钱包信息
-				const mockMnemonic = [
-					'abandon', 'ability', 'able', 'about', 'above', 'absent',
-					'absorb', 'abstract', 'absurd', 'abuse', 'access', 'accident'
-				];
+				if (!result.success) {
+					throw new Error(result.error || '创建失败');
+				}
 				
 				const walletInfo = {
 					name: this.walletName,
-					address: '0x' + Math.random().toString(16).substr(2, 40),
+					address: result.address,
+					privateKey: result.privateKey,
 					createTime: new Date().getTime()
+				};
+				
+				// 将数据存储到全局变量
+				getApp().globalData = getApp().globalData || {};
+				getApp().globalData.tempWalletData = {
+					mnemonic: result.mnemonic,
+					walletInfo: walletInfo
 				};
 				
 				// 跳转到助记词页面
 				uni.navigateTo({
-					url: '/pages/wallet/mnemonic',
-					success: () => {
-						// 传递创建的钱包信息和助记词
-						uni.$emit('walletCreated', {
-							mnemonic: mockMnemonic,
-							walletInfo: walletInfo
-						});
-					}
+					url: '/pages/wallet/mnemonic'
 				});
-			}, 2000);
+			} catch (error) {
+				uni.showToast({
+					title: error.message || '创建失败',
+					icon: 'none'
+				});
+			} finally {
+				uni.hideLoading();
+			}
 		}
 	}
 }

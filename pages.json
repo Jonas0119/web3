@@ -4,7 +4,9 @@
 			"path": "pages/index/index",
 			"style": {
 				"navigationBarTitleText": "Web3钱包",
-				"navigationStyle": "custom"
+				"navigationStyle": "custom",
+				"enablePullDownRefresh": true,
+				"backgroundTextStyle": "dark"
 			}
 		},
 		{

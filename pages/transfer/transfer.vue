@@ -11,17 +11,12 @@
 		
 		<!-- 转账表单 -->
 		<view class="transfer-form">
-			<!-- 选择代币区域 -->
-			<view class="form-item token-select" @click="handleSelectToken">
-				<view class="token-info">
-					<crypto-icon :symbol="selectedToken.symbol" :size="60" />
-					<view class="token-details">
-						<view class="token-name">{{selectedToken.name}}</view>
-						<view class="token-balance">余额:$ {{selectedToken.balance}}</view>
-					</view>
-				</view>
-				<view class="token-select-arrow">
-					<text class="iconfont">&#xe6a6;</text>
+			<!-- 账户信息区域 -->
+			<view class="form-item account-info">
+				<view class="account-details">
+					<view class="account-name">{{currentWallet.name || 'ETH账户'}}</view>
+					<view class="account-address">{{currentWallet.address}}</view>
+					<view class="account-balance">总余额: ${{currentWallet.balance || '0.00'}}</view>
 				</view>
 			</view>
 			
@@ -39,18 +34,15 @@
 			<!-- 币种选择 -->
 			<view class="form-item">
 				<view class="form-label">币种</view>
-				<view class="form-input-wrapper currency-select" @click="handleSelectCurrency">
+				<view class="form-input-wrapper currency-select">
 					<view class="selected-currency">
-						<view class="currency-icon" :style="{backgroundColor: selectedCurrency.color}">
-							<text class="currency-symbol-text">{{selectedCurrency.symbol.charAt(0).toUpperCase()}}</text>
+						<view class="currency-icon" style="background-color: #627eea">
+							<text class="currency-symbol-text">E</text>
 						</view>
-						<text class="currency-name">{{selectedCurrency.name}}</text>
-					</view>
-					<view class="dropdown-arrow">
-						<text class="iconfont">&#xe6a6;</text>
+						<text class="currency-name">ETH</text>
 					</view>
 				</view>
-				<view class="currency-balance">余额: {{selectedCurrency.balance}} {{selectedCurrency.symbol.toUpperCase()}}</view>
+				<view class="currency-balance">余额: {{tokenBalance}} ETH</view>
 			</view>
 			
 			<!-- 转账金额 -->
@@ -65,21 +57,6 @@
 				</view>
 				<view class="amount-usd" v-if="transferAmount">≈ ${{calculateUSD()}}</view>
 			</view>
-			
-			<!-- 矿工费 -->
-			<view class="form-item">
-				<view class="form-label">矿工费</view>
-				<view class="gas-options">
-					<view class="gas-option" 
-						v-for="(option, index) in gasOptions" 
-						:key="index"
-						:class="{ 'selected': selectedGasIndex === index }"
-						@click="selectGas(index)">
-						<view class="gas-speed">{{option.speed}}</view>
-						<view class="gas-price">{{option.price}}</view>
-					</view>
-				</view>
-			</view>
 		</view>
 		
 		<!-- 确认按钮 -->
@@ -90,78 +67,69 @@
 </template>
 
 <script>
+import {
+	loadWalletFromStorage,
+	getEthBalance,
+	formatBalance,
+	calculateTokenValue,
+	transferETH
+} from '../../utils/web3Utils.js';
+
 export default {
 	data() {
 		return {
-			selectedToken: {
-				name: "主账户",
-				symbol: "bsc",
-				balance: "100.05"
-			},
+			currentWallet: {},
 			receiverAddress: "",
 			transferAmount: "",
-			gasOptions: [
-				{ speed: "慢", price: "0.0005 BNB" },
-				{ speed: "推荐", price: "0.0010 BNB" },
-				{ speed: "快", price: "0.0015 BNB" }
-			],
-			selectedGasIndex: 1,
-			currencies: [
-				{ name: "BNB", symbol: "bnb", balance: "0.0125", color: "#F3BA2F" },
-				{ name: "BSC", symbol: "bsc", balance: "0.0500", color: "#f7931a" },
-				{ name: "Piao", symbol: "piao", balance: "120.0000", color: "#627eea" },
-				{ name: "USDT", symbol: "usdt", balance: "35.5000", color: "#26a17b" },
-				{ name: "Dimei", symbol: "dimei", balance: "88.0000", color: "#9b59b6" },
-				{ name: "Mu", symbol: "mu", balance: "55.0000", color: "#3498db" },
-				{ name: "PinfR", symbol: "pinfr", balance: "10.0000", color: "#e74c3c" }
-			],
-			selectedCurrency: null
+			tokenBalance: "0.0000",
+			isTransferring: false
 		}
 	},
-	created() {
-		// 默认选择BNB币种
-		this.selectedCurrency = this.currencies[0];
-		this.selectedToken = this.currencies[0];
-		this.selectedToken.balance = this.selectedCurrency.balance;
-
-	},
 	methods: {
+		async loadWalletInfo() {
+			const wallet = loadWalletFromStorage();
+			if (wallet) {
+				// 获取ETH余额
+				const balance = await getEthBalance(wallet.address);
+				const formattedBalance = formatBalance(balance);
+				const value = await calculateTokenValue(formattedBalance);
+				
+				this.currentWallet = {
+					name: wallet.name || 'ETH账户',
+					address: wallet.address,
+					balance: value,
+					privateKey: wallet.privateKey
+				};
+				this.tokenBalance = formattedBalance;
+			}
+		},
+		
 		handleBack() {
 			uni.navigateBack();
 		},
-		handleSelectToken() {
-			uni.showToast({
-				title: '选择代币功能待实现',
-				icon: 'none'
-			});
-		},
+		
 		handleScan() {
 			uni.showToast({
 				title: '扫码功能待实现',
 				icon: 'none'
 			});
 		},
+		
 		setMaxAmount() {
-			this.transferAmount = this.selectedToken.balance;
+			this.transferAmount = this.tokenBalance;
 		},
-		selectGas(index) {
-			this.selectedGasIndex = index;
+		
+		async calculateUSD() {
+			if (!this.transferAmount) return "0.00";
+			const value = await calculateTokenValue(this.transferAmount);
+			return value;
 		},
-		calculateUSD() {
-			// 这里应该有一个实际的汇率转换逻辑
-			return (parseFloat(this.transferAmount) * 350).toFixed(2);
-		},
-		handleSelectCurrency() {
-			uni.showActionSheet({
-				itemList: this.currencies.map(currency => `${currency.name} (${currency.balance} ${currency.symbol.toUpperCase()})`),
-				success: (res) => {
-					this.selectedCurrency = this.currencies[res.tapIndex];
-					this.selectedToken = this.currencies[res.tapIndex];
-					this.selectedToken.balance = this.selectedCurrency.balance;
-				}
-			});
-		},
-		handleConfirm() {
+		
+		async handleConfirm() {
+			if (this.isTransferring) {
+				return;
+			}
+			
 			if (!this.receiverAddress) {
 				uni.showToast({
 					title: '请输入接收地址',
@@ -179,7 +147,7 @@ export default {
 			}
 			
 			// 检查余额是否足够
-			if (parseFloat(this.transferAmount) > parseFloat(this.selectedCurrency.balance)) {
+			if (parseFloat(this.transferAmount) > parseFloat(this.tokenBalance)) {
 				uni.showToast({
 					title: '余额不足',
 					icon: 'none'
@@ -190,31 +158,57 @@ export default {
 			// 展示确认信息
 			uni.showModal({
 				title: '确认转账',
-				content: `将向 ${this.receiverAddress.substring(0, 8)}... 转账 ${this.transferAmount} ${this.selectedCurrency.symbol.toUpperCase()}`,
-				success: (res) => {
+				content: `将向 ${this.receiverAddress.substring(0, 8)}... 转账 ${this.transferAmount} ETH`,
+				success: async (res) => {
 					if (res.confirm) {
+						this.isTransferring = true;
 						uni.showLoading({
 							title: '转账中...'
 						});
 						
-						// 模拟转账过程
-						setTimeout(() => {
+						try {
+							const result = await transferETH(
+								this.currentWallet.address,
+								this.receiverAddress,
+								this.transferAmount,
+								this.currentWallet.privateKey
+							);
+							
+							if (result.success) {
+								uni.hideLoading();
+								uni.showToast({
+									title: '转账成功',
+									icon: 'success',
+									duration: 2000,
+									success: () => {
+										setTimeout(() => {
+											uni.navigateBack();
+										}, 2000);
+									}
+								});
+							} else {
+								throw new Error(result.error);
+							}
+						} catch (error) {
 							uni.hideLoading();
 							uni.showToast({
-								title: '转账成功',
-								icon: 'success',
-								duration: 2000,
-								success: () => {
-									setTimeout(() => {
-										uni.navigateBack();
-									}, 2000);
-								}
+								title: error.message || '转账失败',
+								icon: 'none',
+								duration: 3000
 							});
-						}, 2000);
+						} finally {
+							this.isTransferring = false;
+						}
 					}
 				}
 			});
 		}
+	},
+	onLoad() {
+		this.loadWalletInfo();
+	},
+	onShow() {
+		this.loadWalletInfo();
 	}
 }
 </script>
@@ -271,38 +265,33 @@ page {
 	margin-bottom: 30rpx;
 }
 
-.token-select {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
+/* 账户信息样式 */
+.account-info {
 	padding-bottom: 30rpx;
 	border-bottom: 1px solid #f0f0f0;
 }
 
-.token-info {
+.account-details {
 	display: flex;
-	align-items: center;
+	flex-direction: column;
 }
 
-.token-details {
-	margin-left: 20rpx;
-}
-
-.token-name {
+.account-name {
 	font-size: 32rpx;
 	font-weight: 500;
 	color: #333;
+	margin-bottom: 8rpx;
 }
 
-.token-balance {
+.account-address {
 	font-size: 24rpx;
 	color: #999;
-	margin-top: 6rpx;
+	margin-bottom: 8rpx;
 }
 
-.token-select-arrow {
-	color: #999;
-	font-size: 32rpx;
+.account-balance {
+	font-size: 28rpx;
+	color: #666;
 }
 
 .form-label {
@@ -349,46 +338,6 @@ page {
 	text-align: right;
 }
 
-/* 矿工费选择 */
-.gas-options {
-	display: flex;
-	justify-content: space-between;
-}
-
-.gas-option {
-	flex: 1;
-	background-color: #f8f8f8;
-	border-radius: 8rpx;
-	padding: 20rpx;
-	text-align: center;
-	margin: 0 10rpx;
-}
-
-.gas-option:first-child {
-	margin-left: 0;
-}
-
-.gas-option:last-child {
-	margin-right: 0;
-}
-
-.gas-option.selected {
-	background-color: #e9f0ff;
-	border: 1px solid #4a8eff;
-}
-
-.gas-speed {
-	font-size: 28rpx;
-	font-weight: 500;
-	color: #333;
-	margin-bottom: 8rpx;
-}
-
-.gas-price {
-	font-size: 24rpx;
-	color: #999;
-}
-
 /* 币种选择 */
 .currency-select {
 	justify-content: space-between;
@@ -419,11 +368,6 @@ page {
 .currency-name {
 	font-size: 30rpx;
 	color: #333;
-}
-
-.dropdown-arrow {
-	color: #999;
-	font-size: 32rpx;
 }
 
 .currency-balance {
