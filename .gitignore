@@ -1,7 +1,7 @@
 # 忽略所有.class文件
 
 # 忽略build目录及其内容
-node_modules/
+/node_modules
 
 # 忽略特定文件
 send_eth.js
