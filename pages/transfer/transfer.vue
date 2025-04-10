@@ -55,7 +55,7 @@
 						placeholder="输入转账金额" />
 					<view class="max-button" @click="setMaxAmount">最大</view>
 				</view>
-				<view class="amount-usd" v-if="transferAmount">≈ ${{calculateUSD()}}</view>
+				<view class="amount-usd" v-if="transferAmount">≈ ${{usdValue}}</view>
 			</view>
 		</view>
 		
@@ -82,7 +82,17 @@ export default {
 			receiverAddress: "",
 			transferAmount: "",
 			tokenBalance: "0.0000",
-			isTransferring: false
+			isTransferring: false,
+			usdValue: "0.00"
+		}
+	},
+	watch: {
+		async transferAmount(newVal) {
+			if (newVal) {
+				this.usdValue = await calculateTokenValue(newVal);
+			} else {
+				this.usdValue = "0.00";
+			}
 		}
 	},
 	methods: {
@@ -117,12 +127,6 @@ export default {
 		
 		setMaxAmount() {
 			this.transferAmount = this.tokenBalance;
-		},
-		
-		async calculateUSD() {
-			if (!this.transferAmount) return "0.00";
-			const value = await calculateTokenValue(this.transferAmount);
-			return value;
 		},
 		
 		async handleConfirm() {

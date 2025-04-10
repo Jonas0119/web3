@@ -334,5 +334,5 @@ export const generateMnemonicAndWallet = async () => {
 export const formatAddress = (address) => {
     if (!address) return '';
     if (address.length < 15) return address;
-    return `${address.slice(0, 20)}...${address.slice(-10)}`;
+    return `${address.slice(0, 15)}...${address.slice(-5)}`;
 }; 
