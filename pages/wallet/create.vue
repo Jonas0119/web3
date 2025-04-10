@@ -3,7 +3,7 @@
 		<!-- 顶部导航栏 -->
 		<view class="navbar">
 			<view class="back-icon" @click="handleBack">
-				<text class="iconfont">&#xe6a5;</text>
+				<icon-wrapper name="mdi:back" :size="44" color="#333333" />
 			</view>
 			<view class="title">创建账号</view>
 			<view class="placeholder"></view>
@@ -31,9 +31,13 @@
 </template>
 
 <script>
+import { IconWrapper } from '../../components/icons'
 import { generateMnemonicAndWallet } from '@/utils/web3Utils.js';
 
 export default {
+	components: {
+		'icon-wrapper': IconWrapper
+	},
 	data() {
 		return {
 			walletName: '',

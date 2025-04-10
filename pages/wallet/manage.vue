@@ -3,11 +3,11 @@
 		<!-- 顶部导航栏 -->
 		<view class="navbar">
 			<view class="back-icon" @click="handleBack">
-				<text class="iconfont">&#xe6a5;</text>
+				<icon-wrapper name="mdi:back" :size="44" color="#333333" />
 			</view>
 			<view class="title">管理账户</view>
 			<view class="add-icon" @click="toggleCreateModal">
-				<text class="iconfont">+</text>
+				<icon-wrapper name="mdi:plus" :size="44" color="#333333" />
 			</view>
 		</view>
 		
@@ -17,18 +17,27 @@
 				v-for="(wallet, index) in walletList" 
 				:key="index"
 				@click="handleSelectWallet(wallet)">
-				<view class="wallet-info">
+				<!-- 左侧图标区域 -->
+				<view class="wallet-left">
 					<crypto-icon :symbol="wallet.symbol" :size="80" />
-					<view class="wallet-details">
-						<view class="wallet-name">{{wallet.name}}</view>
-						<view class="wallet-address">{{formatAddress(wallet.address)}}</view>
+				</view>
+				<!-- 右侧内容区域 -->
+				<view class="wallet-content">
+					<!-- 第一行：账户名称和市值 -->
+					<view class="wallet-row">
+						<view class="name-wrapper">
+							<text class="wallet-name">{{wallet.name}}</text>
+							<text class="active-tag" v-if="isActiveWallet(wallet)">当前</text>
+						</view>
+						<text class="wallet-balance">${{wallet.balance}}</text>
 					</view>
-				</view>
-				<view class="wallet-amount">
-					<view class="wallet-balance">${{wallet.balance}}</view>
-				</view>
-				<view class="delete-icon" @click.stop="handleDeleteWallet(index)">
-					<text class="iconfont">&#xe6a5;</text>
+					<!-- 第二行：地址和删除按钮 -->
+					<view class="wallet-row">
+						<text class="wallet-address">{{formatAddress(wallet.address)}}</text>
+						<view class="delete-icon" @click.stop="handleDeleteWallet(index)">
+							<icon-wrapper name="mdi:delete" :size="28" color="#FF6B6B" />
+						</view>
+					</view>
 				</view>
 			</view>
 		</view>
@@ -52,6 +61,7 @@
 </template>
 
 <script>
+import { IconWrapper, CryptoIcon } from '../../components/icons'
 import {
 	loadWalletsFromStorage,
 	deleteWallet,
@@ -59,20 +69,29 @@ import {
 	formatBalance,
 	calculateTokenValue,
 	saveWalletToStorage,
-	formatAddress
+	formatAddress,
+	loadWalletFromStorage
 } from '../../utils/web3Utils.js';
 
 export default {
+	components: {
+		'icon-wrapper': IconWrapper,
+		'crypto-icon': CryptoIcon
+	},
 	data() {
 		return {
 			isShowCreateModal: false,
-			walletList: []
+			walletList: [],
+			currentWallet: null
 		}
 	},
 	methods: {
 		// 加载钱包列表
 		async loadWallets() {
 			const wallets = loadWalletsFromStorage();
+			// 获取当前活跃钱包
+			this.currentWallet = loadWalletFromStorage();
+			
 			// 获取每个钱包的最新余额
 			for (let wallet of wallets) {
 				const balance = await getEthBalance(wallet.address);
@@ -125,13 +144,33 @@ export default {
 		// 删除钱包时阻止事件冒泡
 		async handleDeleteWallet(index) {
 			const wallet = this.walletList[index];
+			const currentWallet = loadWalletFromStorage();
+			
+			// 如果只剩一个钱包，不允许删除
+			if (this.walletList.length === 1) {
+				uni.showToast({
+					title: '至少保留一个账户',
+					icon: 'none'
+				});
+				return;
+			}
+			
 			uni.showModal({
 				title: '确认删除',
 				content: '确定要删除此钱包吗？此操作不可逆，请确保已备份助记词或私钥。',
-				success: (res) => {
+				success: async (res) => {
 					if (res.confirm) {
 						if (deleteWallet(wallet.address)) {
 							this.walletList.splice(index, 1);
+							
+							// 如果删除的是当前活跃账户，则将第一个账户设为活跃账户
+							if (currentWallet && currentWallet.address === wallet.address) {
+								const firstWallet = this.walletList[0];
+								if (firstWallet) {
+									await saveWalletToStorage(firstWallet);
+								}
+							}
+							
 							uni.showToast({
 								title: '删除成功',
 								icon: 'success'
@@ -163,6 +202,11 @@ export default {
 			uni.navigateTo({
 				url: '/pages/wallet/import'
 			});
+		},
+		
+		// 判断是否为当前活跃钱包
+		isActiveWallet(wallet) {
+			return this.currentWallet && wallet.address === this.currentWallet.address;
 		}
 	},
 	onLoad() {
@@ -226,9 +270,9 @@ page {
 	background-color: #ffffff;
 	margin-bottom: 20rpx;
 	border-radius: 16rpx;
-	padding: 30rpx;
+	padding: 24rpx;
 	display: flex;
-	align-items: center;
+	align-items: stretch;
 	position: relative;
 	overflow: hidden;
 }
@@ -269,46 +313,56 @@ page {
 	background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1));
 }
 
-.wallet-info {
+/* 左侧图标区域 */
+.wallet-left {
 	display: flex;
 	align-items: center;
-	flex: 1;
+	justify-content: center;
+	padding: 0 20rpx;
 	z-index: 1;
 }
 
-.wallet-details {
+/* 右侧内容区域 */
+.wallet-content {
+	flex: 1;
 	display: flex;
 	flex-direction: column;
-	margin-left: 20rpx;
+	justify-content: space-between;
+	margin-left: 10rpx;
+	z-index: 1;
 }
 
+/* 行样式 */
+.wallet-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	width: 100%;
+}
+
+/* 账户名称 */
 .wallet-name {
 	font-size: 32rpx;
 	color: #333;
 	font-weight: 500;
-	margin-bottom: 6rpx;
 }
 
-.wallet-address {
-	font-size: 24rpx;
-	color: #999;
-}
-
-.wallet-amount {
-	z-index: 1;
-}
-
+/* 账户余额 */
 .wallet-balance {
 	font-size: 32rpx;
 	color: #333;
 	font-weight: 500;
 }
 
-.delete-icon {
-	margin-left: 30rpx;
-	font-size: 44rpx;
+/* 账户地址 */
+.wallet-address {
+	font-size: 24rpx;
 	color: #999;
-	z-index: 1;
+}
+
+/* 删除图标 */
+.delete-icon {
+	padding: 4rpx 0 4rpx 20rpx;
 }
 
 /* 创建钱包弹窗 */
@@ -381,5 +435,22 @@ page {
 	font-style: normal;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
+}
+
+/* 名称包装器 */
+.name-wrapper {
+	display: flex;
+	align-items: center;
+	gap: 12rpx;
+}
+
+/* 当前账号标签 */
+.active-tag {
+	font-size: 22rpx;
+	font-weight: bold;
+	color: #4080FF;
+	background-color: rgba(64, 128, 255, 0.1);
+	padding: 4rpx 12rpx;
+	border-radius: 8rpx;
 }
 </style> 

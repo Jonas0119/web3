@@ -1,37 +1,37 @@
 {
-  "hash": "b69f490c",
+  "hash": "c243bb8f",
   "configHash": "506cc4a0",
-  "lockfileHash": "7a01ee28",
-  "browserHash": "3e75af5f",
+  "lockfileHash": "9706c074",
+  "browserHash": "d1a8a24e",
   "optimized": {
     "web3": {
       "src": "../../../../../node_modules/web3/dist/web3.min.js",
       "file": "web3.js",
-      "fileHash": "5ffce1e8",
+      "fileHash": "81e9db47",
       "needsInterop": true
     },
     "@ethersproject/wallet": {
       "src": "../../../../../node_modules/@ethersproject/wallet/lib.esm/index.js",
       "file": "@ethersproject_wallet.js",
-      "fileHash": "bedb328e",
+      "fileHash": "1d79cb07",
       "needsInterop": false
     },
     "@scure/bip39": {
       "src": "../../../../../node_modules/@scure/bip39/esm/index.js",
       "file": "@scure_bip39.js",
-      "fileHash": "5afd65db",
+      "fileHash": "338495c8",
       "needsInterop": false
     },
     "@scure/bip39/wordlists/english": {
       "src": "../../../../../node_modules/@scure/bip39/esm/wordlists/english.js",
       "file": "@scure_bip39_wordlists_english.js",
-      "fileHash": "2e08a4b1",
+      "fileHash": "190fac18",
       "needsInterop": false
     },
     "axios": {
       "src": "../../../../../node_modules/axios/index.js",
       "file": "axios.js",
-      "fileHash": "3636a3a0",
+      "fileHash": "eefcd3fb",
       "needsInterop": false
     }
   },

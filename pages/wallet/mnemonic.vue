@@ -3,7 +3,7 @@
 		<!-- 顶部导航栏 -->
 		<view class="navbar">
 			<view class="back-icon" @click="handleBack">
-				<text class="iconfont">&#xe6a5;</text>
+				<icon-wrapper name="mdi:back" :size="44" color="#333333" />
 			</view>
 			<view class="title">备份助记词</view>
 			<view class="placeholder"></view>
@@ -49,6 +49,7 @@
 		<!-- 底部按钮区域 -->
 		<view class="button-group">
 			<view class="copy-button" @click="handleCopy">
+				<icon-wrapper name="mdi:content-copy" :size="44" color="#FFFFFF" />
 				复制助记词
 			</view>
 			<!-- <view class="next-button" @click="handleVerify">
@@ -59,9 +60,13 @@
 </template>
 
 <script>
+import { IconWrapper } from '../../components/icons'
 import { saveWalletToStorage, loadWalletsFromStorage } from '@/utils/web3Utils.js';
 
 export default {
+	components: {
+		'icon-wrapper': IconWrapper
+	},
 	data() {
 		return {
 			walletInfo: null,

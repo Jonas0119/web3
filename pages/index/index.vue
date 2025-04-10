@@ -3,9 +3,9 @@
 		<!-- 顶部导航栏 -->
 		<view class="navbar">
 			<view class="menu-icon">
-				<text class="iconfont icon-menu"></text>
+				<!-- <icon-wrapper :name="getIconName('menu')" :size="44" color="#333333" /> -->
 			</view>
-			<view class="title">Web3钱包</view>
+			<view class="title">智慧账簿</view>
 		</view>
 		
 		<!-- 钱包卡片区域 -->
@@ -26,11 +26,11 @@
 			<!-- 转账和收款按钮 -->
 			<view class="action-buttons">
 				<view class="action-button transfer" @click="handleTransfer">
-					<view class="action-icon transfer-icon">⟲</view>
+					<icon-wrapper :name="getIconName('send')" :size="32" color="#FFFFFF" />
 					<text class="action-text">转账</text>
 				</view>
 				<view class="action-button receive" @click="handleReceive">
-					<view class="action-icon receive-icon">¥</view>
+					<icon-wrapper :name="getIconName('receive')" :size="32" color="#FFFFFF" />
 					<text class="action-text">收款</text>
 				</view>
 			</view>
@@ -39,20 +39,16 @@
 		<!-- 资产列表头部 -->
 		<view class="assets-header">
 			<view class="assets-title">资产</view>
-			<view class="add-asset" @click="handleAddAsset">
-				<text class="add-icon">+</text>
-			</view>
+			<!-- <view class="add-asset" @click="handleAddAsset">
+				<icon-wrapper :name="getIconName('plus')" :size="36" color="#333333" />
+			</view> -->
 		</view>
 		
 		<!-- 资产列表 -->
 		<view class="assets-list">
 			<view class="asset-item" v-for="(asset, index) in assetsList" :key="index">
 				<view class="asset-info">
-					<view class="asset-icon">
-						<text v-if="asset.symbol === 'bsc'" class="crypto-icon">₿</text>
-						<text v-else-if="asset.symbol === 'usdo'" class="crypto-icon usdo-icon">₮</text>
-						<text v-else class="crypto-icon">{{asset.symbol.charAt(0).toUpperCase()}}</text>
-					</view>
+					<crypto-icon :symbol="asset.symbol" :size="80" />
 					<view class="asset-details">
 						<view class="asset-name">
 							{{asset.name}} 
@@ -82,8 +78,14 @@ import {
 	calculateTokenValue,
 	formatAddress
 } from '../../utils/web3Utils.js';
+import { getIconName } from '../../utils/icons';
+import { IconWrapper, CryptoIcon } from '../../components/icons';
 
 export default {
+	components: {
+		'icon-wrapper': IconWrapper,
+		'crypto-icon': CryptoIcon
+	},
 	data() {
 		return {
 			walletInfo: null,
@@ -103,6 +105,7 @@ export default {
 		}
 	},
 	methods: {
+		getIconName,
 		// 初始化钱包
 		async initWallet() {
 			try {
@@ -308,7 +311,6 @@ page {
 }
 
 .menu-icon {
-	font-size: 50rpx;
 	width: 60rpx;
 	color: #333;
 }
@@ -412,6 +414,7 @@ page {
 	font-size: 32rpx;
 	box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.1);
 	font-weight: 500;
+	gap: 16rpx;
 }
 
 .action-button.transfer {
@@ -422,28 +425,6 @@ page {
 .action-button.receive {
 	background-color: #f0a33e;
 	color: #ffffff;
-}
-
-.action-icon {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	width: 40rpx;
-	height: 40rpx;
-	border: 2rpx solid #ffffff;
-	border-radius: 50%;
-	margin-right: 16rpx;
-	font-size: 22rpx;
-	line-height: 1;
-}
-
-.transfer-icon {
-	font-weight: normal;
-	transform: scaleX(-1);
-}
-
-.receive-icon {
-	font-weight: bold;
 }
 
 /* 资产列表头部 */
@@ -470,8 +451,6 @@ page {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 36rpx;
-	font-weight: bold;
 	box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
 }
 
@@ -491,50 +470,6 @@ page {
 .asset-info {
 	display: flex;
 	align-items: center;
-}
-
-.asset-icon {
-	width: 80rpx;
-	height: 80rpx;
-	border-radius: 40rpx;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-size: 32rpx;
-	color: #ffffff;
-	font-weight: bold;
-}
-
-.asset-item:nth-child(1) .asset-icon {
-	background-color: #f7931a; /* BSC 比特币金色 */
-}
-
-.asset-item:nth-child(2) .asset-icon {
-	background-color: #627eea; /* Piao 以太坊蓝色 */
-}
-
-.asset-item:nth-child(3) .asset-icon {
-	background-color: #26a17b; /* USDO 泰达币绿色 */
-}
-
-.asset-item:nth-child(4) .asset-icon {
-	background-color: #9b59b6; /* Dimei 紫色 */
-}
-
-.asset-item:nth-child(5) .asset-icon {
-	background-color: #3498db; /* Mu 蓝色 */
-}
-
-.asset-item:nth-child(6) .asset-icon {
-	background-color: #e74c3c; /* PinfR 红色 */
-}
-
-.crypto-icon {
-	font-size: 36rpx;
-}
-
-.usdo-icon {
-	font-size: 42rpx;
 }
 
 .asset-details {

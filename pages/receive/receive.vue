@@ -3,7 +3,7 @@
 		<!-- 顶部导航栏 -->
 		<view class="navbar">
 			<view class="back-icon" @click="handleBack">
-				<text class="iconfont icon-back"></text>
+				<icon-wrapper name="mdi:back" :size="44" color="#333333" />
 			</view>
 			<view class="title">收款</view>
 		</view>
@@ -42,7 +42,7 @@
 		
 		<!-- 复制按钮 -->
 		<view class="copy-button" @click="handleCopy">
-			<text class="copy-icon iconfont icon-copy"></text>
+			<icon-wrapper name="mdi:content-copy" :size="44" color="#333333" />
 			<text class="copy-text">复制账户</text>
 		</view>
 	</view>
@@ -50,11 +50,13 @@
 
 <script>
 import tkiQrcode from 'tki-qrcode'
+import { IconWrapper } from '../../components/icons'
 import { loadWalletFromStorage, formatAddress } from '@/utils/web3Utils.js'
 
 export default {
 	components: {
-		tkiQrcode
+		tkiQrcode,
+		'icon-wrapper': IconWrapper
 	},
 	data() {
 		return {

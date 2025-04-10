@@ -69,9 +69,19 @@
         "enable" : false
     },
     "vueVersion" : "3",
-    "permissions": {
-        "Clipboard": {
-            "description": "用于复制助记词"
+    "permissions" : {
+        "Clipboard" : {
+            "description" : "用于复制助记词"
+        }
+    },
+    "h5" : {
+        "title" : "智慧账簿",
+        "router" : {
+            "mode" : "hash",
+            "base" : "./"
+        },
+        "devServer" : {
+            "https" : false
         }
     }
 }

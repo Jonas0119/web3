@@ -3,7 +3,7 @@
 		<!-- 顶部导航栏 -->
 		<view class="navbar">
 			<view class="back-icon" @click="handleBack">
-				<text class="iconfont">&#xe6a5;</text>
+				<icon-wrapper name="mdi:back" :size="44" color="#333333" />
 			</view>
 			<view class="title">转账</view>
 			<view class="placeholder"></view>
@@ -25,9 +25,9 @@
 				<view class="form-label">接收地址</view>
 				<view class="form-input-wrapper">
 					<input class="form-input" v-model="receiverAddress" placeholder="输入或粘贴地址" />
-					<view class="scan-icon" @click="handleScan">
-						<text class="iconfont">&#xe6a8;</text>
-					</view>
+					<!-- <view class="scan-icon" @click="handleScan">
+						<icon-wrapper name="mdi:scan" :size="44" color="#333333" />
+					</view> -->
 				</view>
 			</view>
 			
@@ -67,6 +67,7 @@
 </template>
 
 <script>
+import { IconWrapper } from '../../components/icons'
 import {
 	loadWalletFromStorage,
 	getEthBalance,
@@ -76,6 +77,9 @@ import {
 } from '../../utils/web3Utils.js';
 
 export default {
+	components: {
+		'icon-wrapper': IconWrapper
+	},
 	data() {
 		return {
 			currentWallet: {},

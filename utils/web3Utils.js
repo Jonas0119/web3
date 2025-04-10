@@ -9,9 +9,10 @@ const CONFIG = {
     ETH_NODE_URL: 'http://60.29.255.74:9018', // 本地ETH节点地址
     STORAGE_KEY: 'ETH_WALLET_INFO',
     WALLETS_STORAGE_KEY: 'ETH_WALLETS_LIST', // 添加钱包列表存储key
-    COINGECKO_API: 'https://api.coingecko.com/api/v3',
-    REFRESH_INTERVAL: 1200000,
-    ETH_PRICE_STORAGE_KEY: 'LAST_ETH_PRICE' // 添加ETH价格存储key
+    ETH_PRICE_API: 'https://tsanghi.com/api/fin/crypto/realtime?token=demo&ticker=ETH/USD',
+    REFRESH_INTERVAL: 600000, // 5分钟更新一次
+    ETH_PRICE_STORAGE_KEY: 'LAST_ETH_PRICE', // ETH价格存储key
+    ETH_PRICE_UPDATE_TIME_KEY: 'ETH_PRICE_UPDATE_TIME' // 添加价格更新时间存储key
 };
 
 let web3Instance = null;
@@ -133,7 +134,7 @@ export const getEthBalance = async (address) => {
         }
         const web3 = initWeb3();
         const balance = await web3.eth.getBalance(address);
-        console.log("getEthBalance:", balance);
+        //console.log("getEthBalance:", balance);
         return balance;
     } catch (error) {
         console.error('获取ETH余额失败:', error);
@@ -144,39 +145,72 @@ export const getEthBalance = async (address) => {
 // 获取ETH价格
 export const getEthPrice = async () => {
     try {
-        const response = await axios.get(`${CONFIG.COINGECKO_API}/simple/price?ids=ethereum&vs_currencies=usd`);
-        const currentPrice = response.data.ethereum.usd;
-        console.log("getEthPrice response.data.ethereum.usd:", currentPrice);
+        // 检查是否需要更新价格
+        const now = Date.now();
+        const lastUpdateTime = uni.getStorageSync(CONFIG.ETH_PRICE_UPDATE_TIME_KEY) || 0;
+        const savedPrice = uni.getStorageSync(CONFIG.ETH_PRICE_STORAGE_KEY);
         
-        // 更新最后成功获取的价格
-        lastEthPrice = currentPrice;
-        // 将价格保存到本地存储
-        uni.setStorageSync(CONFIG.ETH_PRICE_STORAGE_KEY, currentPrice);
+        // 如果有缓存价格且未超过更新间隔，直接返回缓存价格
+        if (savedPrice && (now - lastUpdateTime) < CONFIG.REFRESH_INTERVAL) {
+            //console.log('使用缓存的ETH价格:', savedPrice);
+            return savedPrice;
+        }
         
-        return currentPrice;
+        // 请求新价格
+        const response = await axios.get(CONFIG.ETH_PRICE_API);
+        if (response.data.code === 200 && response.data.data && response.data.data[0]) {
+            const currentPrice = response.data.data[0].close;
+            console.log("获取新ETH价格时间为:", new Date(now).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }));
+            console.log("获取到新的ETH价格:", currentPrice);
+            
+            // 更新缓存和时间戳
+            uni.setStorageSync(CONFIG.ETH_PRICE_STORAGE_KEY, currentPrice);
+            uni.setStorageSync(CONFIG.ETH_PRICE_UPDATE_TIME_KEY, now);
+            lastEthPrice = currentPrice;
+            
+            return currentPrice;
+        } else {
+            //throw new Error('无效的价格数据');
+            console.log("获取ETH价格失败:", new Date(now).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }));
+            return 1600;
+        }
     } catch (error) {
         console.error('获取ETH价格失败:', error);
         
-        // 如果内存中有缓存价格，直接使用
+        // 如果内存中有缓存价格，使用缓存
         if (lastEthPrice !== null) {
-            console.log('使用缓存的ETH价格:', lastEthPrice);
+            console.log('使用内存缓存的ETH价格:', lastEthPrice);
             return lastEthPrice;
         }
         
-        // 尝试从本地存储获取上次保存的价格
-        try {
-            const savedPrice = uni.getStorageSync(CONFIG.ETH_PRICE_STORAGE_KEY);
-            if (savedPrice) {
-                console.log('使用本地存储的ETH价格:', savedPrice);
-                lastEthPrice = savedPrice;
-                return savedPrice;
-            }
-        } catch (storageError) {
-            console.error('读取本地存储的ETH价格失败:', storageError);
+        // 尝试使用本地存储的价格
+        const savedPrice = uni.getStorageSync(CONFIG.ETH_PRICE_STORAGE_KEY);
+        if (savedPrice) {
+            console.log('使用本地存储的ETH价格:', savedPrice);
+            lastEthPrice = savedPrice;
+            return savedPrice;
         }
         
-        // 如果没有任何缓存价格，返回默认值
-        return 0; // 设置一个合理的默认ETH价格
+        // 如果没有任何缓存价格，获取一次新价格
+        try {
+            const response = await axios.get(CONFIG.ETH_PRICE_API);
+            if (response.data.code === 200 && response.data.data && response.data.data[0]) {
+                const currentPrice = response.data.data[0].close;
+                console.log("首次获取ETH价格:", currentPrice);
+                
+                // 保存价格和更新时间
+                uni.setStorageSync(CONFIG.ETH_PRICE_STORAGE_KEY, currentPrice);
+                uni.setStorageSync(CONFIG.ETH_PRICE_UPDATE_TIME_KEY, Date.now());
+                lastEthPrice = currentPrice;
+                
+                return currentPrice;
+            }
+        } catch (retryError) {
+            console.error('首次获取ETH价格也失败:', retryError);
+        }
+        
+        // 如果所有尝试都失败，返回默认值
+        return 0;
     }
 };
 
@@ -224,9 +258,9 @@ export const calculateTokenValue = async (balance) => {
             return '0.0000';
         }
         const ethPrice = await getEthPrice();
-        console.log("ethPrice:", ethPrice);
+        //console.log("ethPrice:", ethPrice);
         const value = parseFloat(balance) * parseFloat(ethPrice);
-        console.log("calculateTokenValue:", value);
+        //console.log("calculateTokenValue:", value);
         return value.toFixed(2);
     } catch (error) {
         console.error('计算余额失败:', error);
