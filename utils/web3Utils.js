@@ -6,10 +6,11 @@ import axios from 'axios';
 
 // 配置
 const CONFIG = {
-    ETH_NODE_URL: 'http://60.29.255.74:9018', // 本地ETH节点地址
+    ETH_NODE_URL: 'http://47.95.5.231:8181/api/', // 本地ETH节点地址
     STORAGE_KEY: 'ETH_WALLET_INFO',
     WALLETS_STORAGE_KEY: 'ETH_WALLETS_LIST', // 添加钱包列表存储key
     ETH_PRICE_API: 'https://tsanghi.com/api/fin/crypto/realtime?token=demo&ticker=ETH/USD',
+    //COINGECKO_API: 'https://api.coingecko.com/api/v3',
     REFRESH_INTERVAL: 600000, // 5分钟更新一次
     ETH_PRICE_STORAGE_KEY: 'LAST_ETH_PRICE', // ETH价格存储key
     ETH_PRICE_UPDATE_TIME_KEY: 'ETH_PRICE_UPDATE_TIME' // 添加价格更新时间存储key
@@ -170,9 +171,9 @@ export const getEthPrice = async () => {
             
             return currentPrice;
         } else {
-            //throw new Error('无效的价格数据');
-            console.log("获取ETH价格失败:", new Date(now).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }));
-            return 1600;
+            throw new Error('无效的价格数据');
+            //console.log("获取ETH价格失败:", new Date(now).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }));
+            //return 1600;
         }
     } catch (error) {
         console.error('获取ETH价格失败:', error);
@@ -207,10 +208,11 @@ export const getEthPrice = async () => {
             }
         } catch (retryError) {
             console.error('首次获取ETH价格也失败:', retryError);
+            return 1600;
         }
         
         // 如果所有尝试都失败，返回默认值
-        return 0;
+        return 1600;
     }
 };
 

@@ -1,7 +1,7 @@
 {
-    "name" : "web3",
+    "name" : "智慧账簿",
     "appid" : "__UNI__1F0B01A",
-    "description" : "",
+    "description" : "智慧账簿",
     "versionName" : "1.0.0",
     "versionCode" : "100",
     "transformPx" : false,
@@ -83,5 +83,7 @@
         "devServer" : {
             "https" : false
         }
-    }
+    },
+    "locale" : "zh-Hans",
+    "fallbackLocale" : "zh-Hans"
 }
