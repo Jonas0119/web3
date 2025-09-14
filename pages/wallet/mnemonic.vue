@@ -25,7 +25,11 @@
 						v-for="(word, index) in mnemonicWords" 
 						:key="index"
 						@click="handleWordClick(word)">
-						<text class="word-text" user-select selectable>{{word || '点击下方选择'}}</text>
+						<text class="word-text" user-select selectable>{{word || '加载中...'}}</text>
+					</view>
+					<!-- 如果助记词为空，显示提示 -->
+					<view v-if="mnemonicWords.length === 0" class="empty-mnemonic">
+						<text class="empty-text">助记词生成中，请稍候...</text>
 					</view>
 				</view>
 				<!-- 隐藏的助记词文本，用于复制 -->
@@ -79,13 +83,27 @@ export default {
 		if (app.globalData && app.globalData.tempWalletData) {
 			const { mnemonic, walletInfo } = app.globalData.tempWalletData;
 			if (mnemonic && mnemonic.length > 0) {
-				this.mnemonicWords = mnemonic;
+				// 确保mnemonic是数组格式
+				this.mnemonicWords = Array.isArray(mnemonic) ? mnemonic : mnemonic.split(' ');
+				console.log('助记词加载成功:', this.mnemonicWords);
+			} else {
+				console.error('助记词为空或无效');
+				uni.showToast({
+					title: '助记词生成失败',
+					icon: 'none'
+				});
 			}
 			if (walletInfo) {
 				this.walletInfo = walletInfo;
 			}
 			// 使用完后清除临时数据
 			app.globalData.tempWalletData = null;
+		} else {
+			console.error('未找到临时钱包数据');
+			uni.showToast({
+				title: '数据丢失，请重新创建',
+				icon: 'none'
+			});
 		}
 	},
 	methods: {
@@ -415,6 +433,18 @@ page {
 
 .word-text:not(:empty) {
 	color: #333;
+}
+
+/* 空助记词提示 */
+.empty-mnemonic {
+	grid-column: 1 / -1;
+	text-align: center;
+	padding: 60rpx 20rpx;
+}
+
+.empty-text {
+	font-size: 28rpx;
+	color: #999;
 }
 
 /* 警告文本 */

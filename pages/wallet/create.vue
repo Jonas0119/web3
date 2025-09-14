@@ -76,7 +76,7 @@ export default {
 				// 将数据存储到全局变量
 				getApp().globalData = getApp().globalData || {};
 				getApp().globalData.tempWalletData = {
-					mnemonic: walletInfo.mnemonic,
+					mnemonic: walletInfo.mnemonic.split(' '), // 将助记词字符串分割成数组
 					walletInfo: walletInfo
 				};
 				
