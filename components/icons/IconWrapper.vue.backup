@@ -1,28 +1,22 @@
 <template>
   <view 
     class="icon-wrapper"
-    :style="wrapperStyle"
+    :style="{ 
+      color: color,
+      fontSize: size + 'rpx',
+      width: size + 'rpx',
+      height: size + 'rpx',
+      ...customStyle
+    }"
     @click="handleClick"
   >
-    <text 
-      v-if="isIconify" 
-      class="iconify" 
-      :class="iconClasses"
-      :style="iconStyle"
-    >
-      {{ getIconContent() }}
-    </text>
-    <text 
-      v-else 
-      :class="['iconfont', name]"
-      :style="iconStyle"
-    ></text>
+    <text v-if="isIconify" class="iconify" :class="iconClasses">{{ getIconContent() }}</text>
+    <text v-else :class="['iconfont', name]"></text>
   </view>
 </template>
 
 <script>
 import { MDI_CONFIG } from '../../plugins/iconify'
-import { getIconSize, getThemeColor } from '../../utils/iconConfig'
 
 // 添加全局字体加载状态
 let isFontLoaded = false;
@@ -49,21 +43,6 @@ export default {
     customStyle: {
       type: Object,
       default: () => ({})
-    },
-    // 主题
-    theme: {
-      type: String,
-      default: 'light'
-    },
-    // 是否启用动画
-    animated: {
-      type: Boolean,
-      default: false
-    },
-    // 旋转角度
-    rotate: {
-      type: [Number, String],
-      default: 0
     }
   },
   computed: {
@@ -75,32 +54,7 @@ export default {
     iconClasses() {
       return {
         'mdi': true,
-        [`mdi-${this.getMdiName()}`]: true,
-        'animated': this.animated
-      }
-    },
-    // 包装器样式
-    wrapperStyle() {
-      const size = getIconSize(this.size)
-      return {
-        width: size + 'rpx',
-        height: size + 'rpx',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        ...this.customStyle
-      }
-    },
-    // 图标样式
-    iconStyle() {
-      const size = getIconSize(this.size)
-      const color = this.color === 'currentColor' ? this.color : getThemeColor(this.color, this.theme)
-      
-      return {
-        fontSize: size + 'rpx',
-        color: color,
-        transform: this.rotate ? `rotate(${this.rotate}deg)` : 'none',
-        transition: this.animated ? 'all 0.3s ease' : 'none'
+        [`mdi-${this.getMdiName()}`]: true
       }
     }
   },
@@ -125,7 +79,7 @@ export default {
         await new Promise((resolve, reject) => {
           uni.loadFontFace({
             family: 'Material Design Icons',
-            source: 'url(/static/materialdesignicons-webfont.woff2)',
+            source: 'url("https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/fonts/materialdesignicons-webfont.woff2")',
             success() {
               console.log('字体加载成功');
               resolve();
@@ -162,37 +116,12 @@ export default {
   font-family: 'Material Design Icons';
   font-style: normal;
   line-height: 1;
-  display: inline-block;
 }
 
-.iconify.animated {
-  animation: iconPulse 2s infinite;
+.iconfont {
+  font-family: "iconfont" !important;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-
-@keyframes iconPulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-/* 错误状态样式 */
-.icon-wrapper.error .iconify {
-  color: #ff3b30;
-}
-
-/* 成功状态样式 */
-.icon-wrapper.success .iconify {
-  color: #4cd964;
-}
-
-/* 警告状态样式 */
-.icon-wrapper.warning .iconify {
-  color: #ff9500;
-}
-</style>
+</style> 

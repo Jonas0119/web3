@@ -5,7 +5,7 @@
 			<view class="menu-icon">
 				<!-- <icon-wrapper :name="getIconName('menu')" :size="44" color="#333333" /> -->
 			</view>
-			<view class="title">智慧账簿</view>
+			<view class="title">跨链桥CCB</view>
 		</view>
 		
 		<!-- 钱包卡片区域 -->
@@ -61,6 +61,15 @@
 					<view class="asset-balance">{{asset.balance}}</view>
 					<view class="asset-value">{{asset.value}}</view>
 				</view>
+			</view>
+		</view>
+
+		<!-- 跨链桥CCB介绍 -->
+		<view class="ccb-intro">
+			<view class="intro-title">跨链桥CCB简介</view>
+			<view class="intro-content">
+				<text class="intro-text">跨链桥Cross Chain Bridge（CCB）为用户提供一个安全、高效、一站式的多链资产管理体验，实现"一键互联主流链"。跨链桥CCB不仅仅是一个工具，更是连接碎片化区块链世界的基石。它极大地降低了用户进入多链生态的门槛，让资产管理、跨链交易和链间交互变得前所未有的轻松和高效。</text>
+				<text class="welcome-text">欢迎体验未来，开启您的全链资产管理之旅。</text>
 			</view>
 		</view>
 	</view>
@@ -512,5 +521,40 @@ page {
 .asset-value {
 	font-size: 24rpx;
 	color: #999;
+}
+
+/* 跨链桥CCB介绍 */
+.ccb-intro {
+	margin: 40rpx 30rpx;
+	background-color: #f8f9fa;
+	border-radius: 20rpx;
+	padding: 30rpx;
+	border-left: 6rpx solid #4a8eff;
+}
+
+.intro-title {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #333;
+	margin-bottom: 20rpx;
+}
+
+.intro-content {
+	display: flex;
+	flex-direction: column;
+	gap: 15rpx;
+}
+
+.intro-text {
+	font-size: 26rpx;
+	line-height: 1.6;
+	color: #666;
+}
+
+.welcome-text {
+	font-size: 28rpx;
+	font-weight: bold;
+	color: #4a8eff;
+	margin-top: 10rpx;
 }
 </style> 

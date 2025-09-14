@@ -125,7 +125,7 @@ export default {
         await new Promise((resolve, reject) => {
           uni.loadFontFace({
             family: 'Material Design Icons',
-            source: 'url(/static/materialdesignicons-webfont.woff2)',
+            source: 'url("https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/fonts/materialdesignicons-webfont.woff2")',
             success() {
               console.log('字体加载成功');
               resolve();

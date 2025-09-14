@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG图标测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .icon-test {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .icon {
+            width: 48px;
+            height: 48px;
+            margin-right: 10px;
+        }
+        .icon-name {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .icon-path {
+            color: #666;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .error {
+            color: red;
+            background: #ffe6e6;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        .success {
+            color: green;
+            background: #e6ffe6;
+            padding: 5px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>SVG图标路径测试</h1>
+    
+    <div class="test-section">
+        <h2>直接路径测试</h2>
+        <div class="icon-test">
+            <img src="/static/icons/home.svg" class="icon" alt="home" onerror="this.style.border='2px solid red'">
+            <span class="icon-name">home.svg</span>
+            <span class="icon-path">/static/icons/home.svg</span>
+        </div>
+        <div class="icon-test">
+            <img src="/static/icons/market.svg" class="icon" alt="market" onerror="this.style.border='2px solid red'">
+            <span class="icon-name">market.svg</span>
+            <span class="icon-path">/static/icons/market.svg</span>
+        </div>
+        <div class="icon-test">
+            <img src="/static/icons/community.svg" class="icon" alt="community" onerror="this.style.border='2px solid red'">
+            <span class="icon-name">community.svg</span>
+            <span class="icon-path">/static/icons/community.svg</span>
+        </div>
+        <div class="icon-test">
+            <img src="/static/icons/profile.svg" class="icon" alt="profile" onerror="this.style.border='2px solid red'">
+            <span class="icon-name">profile.svg</span>
+            <span class="icon-path">/static/icons/profile.svg</span>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>相对路径测试</h2>
+        <div class="icon-test">
+            <img src="./static/icons/home.svg" class="icon" alt="home" onerror="this.style.border='2px solid red'">
+            <span class="icon-name">home.svg</span>
+            <span class="icon-path">./static/icons/home.svg</span>
+        </div>
+        <div class="icon-test">
+            <img src="./static/icons/market.svg" class="icon" alt="market" onerror="this.style.border='2px solid red'">
+            <span class="icon-name">market.svg</span>
+            <span class="icon-path">./static/icons/market.svg</span>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>激活状态图标测试</h2>
+        <div class="icon-test">
+            <img src="/static/icons/home-active.svg" class="icon" alt="home-active" onerror="this.style.border='2px solid red'">
+            <span class="icon-name">home-active.svg</span>
+            <span class="icon-path">/static/icons/home-active.svg</span>
+        </div>
+        <div class="icon-test">
+            <img src="/static/icons/market-active.svg" class="icon" alt="market-active" onerror="this.style.border='2px solid red'">
+            <span class="icon-name">market-active.svg</span>
+            <span class="icon-path">/static/icons/market-active.svg</span>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>SVG内容测试</h2>
+        <div id="svg-content-test">测试中...</div>
+    </div>
+
+    <script>
+        // 测试SVG内容
+        function testSVGContent() {
+            const testDiv = document.getElementById('svg-content-test');
+            
+            // 测试内联SVG
+            const inlineSVG = `
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="#7A7E83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 22V12H15V22" stroke="#7A7E83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            `;
+            
+            testDiv.innerHTML = `
+                <div class="icon-test">
+                    <div style="width: 48px; height: 48px; margin-right: 10px;">${inlineSVG}</div>
+                    <span class="icon-name">内联SVG</span>
+                    <span class="icon-path">直接嵌入的SVG代码</span>
+                </div>
+            `;
+        }
+        
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('SVG图标测试页面加载完成');
+            testSVGContent();
+        });
+    </script>
+</body>
+</html>

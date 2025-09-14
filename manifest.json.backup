@@ -76,5 +76,20 @@
             "https" : false
         }
     },
-    "locale" : "zh-Hans"
+    "locale" : "zh-Hans",
+    "fallbackLocale" : "zh-Hans",
+    // 底部导航栏图标配置
+    "tabBarIcons" : {
+      home: 'mdi:home',           // 首页
+      homeActive: 'mdi:home',     // 首页激活状态
+      
+      market: 'mdi:chart-line',   // 市场
+      marketActive: 'mdi:chart-line', // 市场激活状态
+      
+      community: 'mdi:forum',     // 社区
+      communityActive: 'mdi:forum', // 社区激活状态
+      
+      profile: 'mdi:account',     // 我的
+      profileActive: 'mdi:account' // 我的激活状态
+    }
 }

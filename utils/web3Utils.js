@@ -8,16 +8,19 @@ import axios from 'axios';
 const CONFIG = {
     ETH_NODE_URL: 'http://47.95.5.231:8181/api/', // 本地ETH节点地址
     STORAGE_KEY: 'ETH_WALLET_INFO',
-    WALLETS_STORAGE_KEY: 'ETH_WALLETS_LIST', // 添加钱包列表存储key
-    ETH_PRICE_API: 'https://tsanghi.com/api/fin/crypto/realtime?token=demo&ticker=ETH/USD',
-    //COINGECKO_API: 'https://api.coingecko.com/api/v3',
-    REFRESH_INTERVAL: 600000, // 5分钟更新一次
-    ETH_PRICE_STORAGE_KEY: 'LAST_ETH_PRICE', // ETH价格存储key
-    ETH_PRICE_UPDATE_TIME_KEY: 'ETH_PRICE_UPDATE_TIME' // 添加价格更新时间存储key
+    WALLETS_STORAGE_KEY: 'ETH_WALLETS_LIST', // 钱包列表存储key
+    // 升级的ETH价格API - 支持多个备用源确保可靠性
+    ETH_PRICE_API: 'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd', // 主API
+    ETH_PRICE_API_BACKUP: 'https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT', // 备用API 1
+    ETH_PRICE_API_BACKUP2: 'https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD', // 备用API 2
+    ETH_PRICE_API_BACKUP3: 'https://api.coinbase.com/v2/exchange-rates?currency=ETH', // 备用API 3
+    REFRESH_INTERVAL: 300000, // 5分钟更新一次，提高实时性
+    ETH_PRICE_STORAGE_KEY: 'LAST_ETH_PRICE',
+    ETH_PRICE_UPDATE_TIME_KEY: 'ETH_PRICE_UPDATE_TIME'
 };
 
 let web3Instance = null;
-let lastEthPrice = null; // 添加最后一次成功获取的ETH价格缓存
+let lastEthPrice = null;
 
 // 初始化Web3
 export const initWeb3 = () => {
@@ -28,153 +31,110 @@ export const initWeb3 = () => {
     return web3Instance;
 };
 
-// 创建新钱包
-export const createNewWallet = () => {
-    const wallet = Wallet.createRandom();
-    return {
-        address: wallet.address,
-        privateKey: wallet.privateKey,
-        createdAt: Date.now()
-    };
-};
-
-// 从存储加载钱包
-export const loadWalletFromStorage = () => {
-    try {
-        const walletInfo = uni.getStorageSync(CONFIG.STORAGE_KEY);
-        return walletInfo || null;
-    } catch (error) {
-        console.error('加载钱包失败:', error);
-        return null;
-    }
-};
-
-// 从存储加载所有钱包
-export const loadWalletsFromStorage = () => {
-    try {
-        const walletsList = uni.getStorageSync(CONFIG.WALLETS_STORAGE_KEY);
-        return walletsList || [];
-    } catch (error) {
-        console.error('加载钱包列表失败:', error);
-        return [];
-    }
-};
-
-// 保存钱包到存储
-export const saveWalletToStorage = (walletInfo) => {
-    try {
-        if (!walletInfo || !walletInfo.address) {
-            console.error('无效的钱包信息');
-            return false;
-        }
-        
-        // 保存当前活跃钱包
-        uni.setStorageSync(CONFIG.STORAGE_KEY, walletInfo);
-        
-        // 更新钱包列表
-        let walletsList = loadWalletsFromStorage();
-        const existingWalletIndex = walletsList.findIndex(w => w.address === walletInfo.address);
-        
-        if (existingWalletIndex === -1) {
-            // 如果是新钱包，添加到列表
-            walletsList.push({
-                name: walletInfo.name || `ETH账户 ${walletsList.length + 1}`,
-                address: walletInfo.address,
-                privateKey: walletInfo.privateKey,
-                createTime: walletInfo.createTime || Date.now(),
-                balance: "0.0000",
-                symbol: "eth"
-            });
-            
-            // 保存更新后的钱包列表
-            uni.setStorageSync(CONFIG.WALLETS_STORAGE_KEY, walletsList);
-            return true;
-        } else {
-            // 如果钱包已存在，更新信息
-            walletsList[existingWalletIndex] = {
-                ...walletsList[existingWalletIndex],
-                ...walletInfo,
-                symbol: "eth"
-            };
-            
-            // 保存更新后的钱包列表
-            uni.setStorageSync(CONFIG.WALLETS_STORAGE_KEY, walletsList);
-            return true;
-        }
-    } catch (error) {
-        console.error('保存钱包失败:', error);
-        return false;
-    }
-};
-
-// 删除钱包
-export const deleteWallet = (address) => {
-    try {
-        let walletsList = loadWalletsFromStorage();
-        const newWalletsList = walletsList.filter(w => w.address !== address);
-        uni.setStorageSync(CONFIG.WALLETS_STORAGE_KEY, newWalletsList);
-        
-        // 如果删除的是当前活跃钱包，清除当前活跃钱包
-        const currentWallet = loadWalletFromStorage();
-        if (currentWallet && currentWallet.address === address) {
-            uni.removeStorageSync(CONFIG.STORAGE_KEY);
-        }
-        
-        return true;
-    } catch (error) {
-        console.error('删除钱包失败:', error);
-        return false;
-    }
-};
-
-// 获取ETH余额
-export const getEthBalance = async (address) => {
-    try {
-        if (!address) {
-            return '0';
-        }
-        const web3 = initWeb3();
-        const balance = await web3.eth.getBalance(address);
-        //console.log("getEthBalance:", balance);
-        return balance;
-    } catch (error) {
-        console.error('获取ETH余额失败:', error);
-        return '0';
-    }
-};
-
-// 获取ETH价格
+// 升级的ETH价格获取API
 export const getEthPrice = async () => {
     try {
-        // 检查是否需要更新价格
         const now = Date.now();
-        const lastUpdateTime = uni.getStorageSync(CONFIG.ETH_PRICE_UPDATE_TIME_KEY) || 0;
-        const savedPrice = uni.getStorageSync(CONFIG.ETH_PRICE_STORAGE_KEY);
         
-        // 如果有缓存价格且未超过更新间隔，直接返回缓存价格
-        if (savedPrice && (now - lastUpdateTime) < CONFIG.REFRESH_INTERVAL) {
-            //console.log('使用缓存的ETH价格:', savedPrice);
-            return savedPrice;
+        // 检查缓存是否有效
+        const lastUpdateTime = uni.getStorageSync(CONFIG.ETH_PRICE_UPDATE_TIME_KEY);
+        const cachedPrice = uni.getStorageSync(CONFIG.ETH_PRICE_STORAGE_KEY);
+        
+        if (lastUpdateTime && cachedPrice && (now - lastUpdateTime) < CONFIG.REFRESH_INTERVAL) {
+            console.log('使用缓存的ETH价格:', cachedPrice);
+            lastEthPrice = cachedPrice;
+            return cachedPrice;
         }
         
-        // 请求新价格
-        const response = await axios.get(CONFIG.ETH_PRICE_API);
-        if (response.data.code === 200 && response.data.data && response.data.data[0]) {
-            const currentPrice = response.data.data[0].close;
-            console.log("获取新ETH价格时间为:", new Date(now).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }));
-            console.log("获取到新的ETH价格:", currentPrice);
-            
+        console.log('开始获取新的ETH价格...');
+        
+        // 升级的API配置 - 更可靠的价格源
+        const apis = [
+            {
+                name: 'coingecko',
+                url: CONFIG.ETH_PRICE_API,
+                parser: (data) => {
+                    if (data.ethereum && data.ethereum.usd) {
+                        return data.ethereum.usd;
+                    }
+                    throw new Error('CoinGecko API: 无效的价格数据');
+                }
+            },
+            {
+                name: 'binance',
+                url: CONFIG.ETH_PRICE_API_BACKUP,
+                parser: (data) => {
+                    if (data.price) {
+                        return parseFloat(data.price);
+                    }
+                    throw new Error('Binance API: 无效的价格数据');
+                }
+            },
+            {
+                name: 'cryptocompare',
+                url: CONFIG.ETH_PRICE_API_BACKUP2,
+                parser: (data) => {
+                    if (data.USD) {
+                        return data.USD;
+                    }
+                    throw new Error('CryptoCompare API: 无效的价格数据');
+                }
+            },
+            {
+                name: 'coinbase',
+                url: CONFIG.ETH_PRICE_API_BACKUP3,
+                parser: (data) => {
+                    if (data.data && data.data.rates && data.data.rates.USD) {
+                        return parseFloat(data.data.rates.USD);
+                    }
+                    throw new Error('Coinbase API: 无效的价格数据');
+                }
+            }
+        ];
+        
+        let currentPrice = null;
+        let lastError = null;
+        
+        // 依次尝试每个API（改为顺序请求以避免并发问题）
+        for (let i = 0; i < apis.length; i++) {
+            try {
+                console.log(`尝试 ${apis[i].name} API...`);
+                const response = await axios.get(apis[i].url, {
+                    timeout: 8000, // 8秒超时
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (compatible; Web3App/1.0)',
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                currentPrice = apis[i].parser(response.data);
+                console.log(`${apis[i].name} API 获取成功，ETH价格:`, currentPrice);
+                break;
+                
+            } catch (error) {
+                lastError = error;
+                console.warn(`${apis[i].name} API 失败:`, error.message);
+                
+                // 如果是网络错误，等待一下再尝试下一个
+                if (error.code === 'ECONNABORTED' || error.code === 'ENOTFOUND') {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                continue;
+            }
+        }
+        
+        if (currentPrice && currentPrice > 0) {
             // 更新缓存和时间戳
             uni.setStorageSync(CONFIG.ETH_PRICE_STORAGE_KEY, currentPrice);
             uni.setStorageSync(CONFIG.ETH_PRICE_UPDATE_TIME_KEY, now);
             lastEthPrice = currentPrice;
             
+            console.log("获取新ETH价格成功:", currentPrice);
             return currentPrice;
         } else {
-            throw new Error('无效的价格数据');
-            //console.log("获取ETH价格失败:", new Date(now).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }));
-            //return 1600;
+            throw lastError || new Error('所有API都失败了');
         }
+        
     } catch (error) {
         console.error('获取ETH价格失败:', error);
         
@@ -192,183 +152,463 @@ export const getEthPrice = async () => {
             return savedPrice;
         }
         
-        // 如果没有任何缓存价格，获取一次新价格
-        try {
-            const response = await axios.get(CONFIG.ETH_PRICE_API);
-            if (response.data.code === 200 && response.data.data && response.data.data[0]) {
-                const currentPrice = response.data.data[0].close;
-                console.log("首次获取ETH价格:", currentPrice);
-                
-                // 保存价格和更新时间
-                uni.setStorageSync(CONFIG.ETH_PRICE_STORAGE_KEY, currentPrice);
-                uni.setStorageSync(CONFIG.ETH_PRICE_UPDATE_TIME_KEY, Date.now());
-                lastEthPrice = currentPrice;
-                
-                return currentPrice;
-            }
-        } catch (retryError) {
-            console.error('首次获取ETH价格也失败:', retryError);
-            return 1600;
-        }
-        
-        // 如果所有尝试都失败，返回默认值
-        return 1600;
+        // 如果都没有，返回默认价格
+        console.log('使用默认ETH价格: 2400');
+        return 2400; // 更新默认价格到当前市场水平
     }
 };
 
-// 获取代币余额
-export const getTokenBalance = async (tokenContract, address) => {
+// 创建新钱包
+export const createWallet = async (walletName) => {
+    try {
+        const mnemonic = bip39.generateMnemonic(wordlist);
+        const wallet = Wallet.fromMnemonic(mnemonic);
+        
+        const walletInfo = {
+            name: walletName,
+            address: wallet.address,
+            privateKey: wallet.privateKey,
+            mnemonic: mnemonic,
+            balance: '0',
+            balanceUSD: '0.00',
+            createdAt: new Date().toISOString()
+        };
+        
+        return walletInfo;
+    } catch (error) {
+        console.error('创建钱包失败:', error);
+        throw error;
+    }
+};
+
+// 从助记词导入钱包
+export const importWalletFromMnemonic = async (mnemonic, walletName) => {
+    try {
+        if (!bip39.validateMnemonic(mnemonic, wordlist)) {
+            throw new Error('无效的助记词');
+        }
+        
+        const wallet = Wallet.fromMnemonic(mnemonic);
+        
+        const walletInfo = {
+            name: walletName,
+            address: wallet.address,
+            privateKey: wallet.privateKey,
+            mnemonic: mnemonic,
+            balance: '0',
+            balanceUSD: '0.00',
+            createdAt: new Date().toISOString()
+        };
+        
+        return walletInfo;
+    } catch (error) {
+        console.error('从助记词导入钱包失败:', error);
+        throw error;
+    }
+};
+
+// 从私钥导入钱包
+export const importWalletFromPrivateKey = async (privateKey, walletName) => {
+    try {
+        const wallet = new Wallet(privateKey);
+        
+        const walletInfo = {
+            name: walletName,
+            address: wallet.address,
+            privateKey: wallet.privateKey,
+            mnemonic: '', // 私钥导入没有助记词
+            balance: '0',
+            balanceUSD: '0.00',
+            createdAt: new Date().toISOString()
+        };
+        
+        return walletInfo;
+    } catch (error) {
+        console.error('从私钥导入钱包失败:', error);
+        throw error;
+    }
+};
+
+// 获取钱包余额
+export const getWalletBalance = async (address) => {
     try {
         const web3 = initWeb3();
-        const minABI = [
-            {
-                constant: true,
-                inputs: [{ name: "_owner", type: "address" }],
-                name: "balanceOf",
-                outputs: [{ name: "balance", type: "uint256" }],
-                type: "function",
-            },
-        ];
-        
-        const contract = new web3.eth.Contract(minABI, tokenContract);
-        const balance = await contract.methods.balanceOf(address).call();
-        return balance;
+        const balance = await web3.eth.getBalance(address);
+        const balanceInEth = web3.utils.fromWei(balance, 'ether');
+        return balanceInEth;
     } catch (error) {
-        console.error('获取代币余额失败:', error);
+        console.error('获取钱包余额失败:', error);
         return '0';
     }
 };
 
-// 格式化余额显示
-export const formatBalance = (balance) => {
-    try {
-        if (!balance) {
-            return '0.0000';
-        }
-        const web3 = initWeb3();
-        return parseFloat(web3.utils.fromWei(balance, 'ether')).toFixed(4);
-    } catch (error) {
-        console.error('格式化余额失败:', error);
-        return '0.0000';
-    }
-};
+// 获取ETH余额 (别名函数，为了兼容)
+export const getEthBalance = getWalletBalance;
 
-// 计算代币市值（本地链上只有ETH，直接返回余额）
-export const calculateTokenValue = async (balance) => {
+// 获取钱包余额（美元）
+export const getWalletBalanceUSD = async (address) => {
     try {
-        if (!balance) {
-            return '0.0000';
-        }
+        const balance = await getWalletBalance(address);
         const ethPrice = await getEthPrice();
-        //console.log("ethPrice:", ethPrice);
-        const value = parseFloat(balance) * parseFloat(ethPrice);
-        //console.log("calculateTokenValue:", value);
-        return value.toFixed(2);
+        const balanceUSD = (parseFloat(balance) * ethPrice).toFixed(2);
+        return balanceUSD;
     } catch (error) {
-        console.error('计算余额失败:', error);
-        return '0.0000';
+        console.error('获取钱包余额USD失败:', error);
+        return '0.00';
     }
 };
 
-// 转账ETH
-export const transferETH = async (fromAddress, toAddress, amount, privateKey) => {
+// 发送ETH
+export const sendEth = async (fromPrivateKey, toAddress, amount) => {
     try {
         const web3 = initWeb3();
+        const wallet = new Wallet(fromPrivateKey);
         
-        // 验证参数
-        if (!fromAddress || !toAddress || !amount || !privateKey) {
-            throw new Error('缺少必要参数：发送地址、接收地址、金额或私钥');
-        }
-
-        // 验证私钥格式
-        if (!privateKey.startsWith('0x')) {
-            privateKey = '0x' + privateKey;
-        }
+        // 获取nonce
+        const nonce = await web3.eth.getTransactionCount(wallet.address);
         
-        // 验证接收地址
-        if (!web3.utils.isAddress(toAddress)) {
-            throw new Error('无效的接收地址');
-        }
-        
-        console.log('转账参数验证通过，开始获取nonce');
-        
-        // 获取当前账户的nonce
-        const nonce = await web3.eth.getTransactionCount(fromAddress);
-        console.log('获取nonce成功:', nonce);
-        
-        // 获取当前gas价格
+        // 获取gas价格
         const gasPrice = await web3.eth.getGasPrice();
-        console.log('获取gasPrice成功:', gasPrice);
         
-        // 预估gas限制
-        const gasLimit = 21000; // ETH转账的固定gas消耗
-        
-        // 构建交易对象
-        const txObject = {
-            nonce: web3.utils.toHex(nonce),
+        // 构建交易
+        const transaction = {
+            from: wallet.address,
             to: toAddress,
-            value: web3.utils.toHex(web3.utils.toWei(amount.toString(), 'ether')),
-            gasLimit: web3.utils.toHex(gasLimit),
-            gasPrice: web3.utils.toHex(gasPrice)
+            value: web3.utils.toWei(amount, 'ether'),
+            gas: 21000,
+            gasPrice: gasPrice,
+            nonce: nonce
         };
-        
-        console.log('交易对象构建完成:', JSON.stringify(txObject));
         
         // 签名交易
-        const signedTx = await web3.eth.accounts.signTransaction(txObject, privateKey);
-        console.log('交易签名成功');
+        const signedTransaction = await wallet.signTransaction(transaction);
         
         // 发送交易
-        const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
-        console.log('交易发送成功，收据:', receipt);
+        const receipt = await web3.eth.sendSignedTransaction(signedTransaction.rawTransaction);
         
-        return {
-            success: true,
-            hash: receipt.transactionHash
-        };
+        return receipt;
     } catch (error) {
-        console.error('转账失败，详细错误:', error);
-        return {
-            success: false,
-            error: error.message || '转账失败'
-        };
+        console.error('发送ETH失败:', error);
+        throw error;
     }
 };
 
-// 生成助记词和钱包
-export const generateMnemonicAndWallet = async () => {
+// 保存钱包信息
+export const saveWalletInfo = (walletInfo) => {
     try {
-        // 生成随机助记词
-        const mnemonic = bip39.generateMnemonic(wordlist);
-        console.log("mnemonic:", mnemonic);
-        const mnemonicArray = mnemonic.split(' ');
-        console.log("mnemonicArray:", mnemonicArray);
-        
-        // 从助记词生成钱包
-        const seed = await bip39.mnemonicToSeed(mnemonic);
-        const wallet = Wallet.fromMnemonic(mnemonic);
-        console.log("wallet:", wallet);
-        console.log("wallet.address:", wallet.address);
-        console.log("wallet.privateKey:", wallet.privateKey);
-        
-        return {
-            success: true,
-            mnemonic: mnemonicArray,
-            address: wallet.address,
-            privateKey: wallet.privateKey
-        };
+        uni.setStorageSync(CONFIG.STORAGE_KEY, walletInfo);
+        console.log('钱包信息已保存');
     } catch (error) {
-        console.error('生成助记词和钱包失败:', error);
-        return {
-            success: false,
-            error: error.message || '生成失败'
-        };
+        console.error('保存钱包信息失败:', error);
+    }
+};
+
+// 加载钱包信息
+export const loadWalletFromStorage = () => {
+    try {
+        const walletInfo = uni.getStorageSync(CONFIG.STORAGE_KEY);
+        return walletInfo || null;
+    } catch (error) {
+        console.error('加载钱包信息失败:', error);
+        return null;
+    }
+};
+
+// 保存钱包列表
+export const saveWalletsList = (walletsList) => {
+    try {
+        uni.setStorageSync(CONFIG.WALLETS_STORAGE_KEY, walletsList);
+        console.log('钱包列表已保存');
+    } catch (error) {
+        console.error('保存钱包列表失败:', error);
+    }
+};
+
+// 加载钱包列表
+export const loadWalletsList = () => {
+    try {
+        const walletsList = uni.getStorageSync(CONFIG.WALLETS_STORAGE_KEY);
+        return walletsList || [];
+    } catch (error) {
+        console.error('加载钱包列表失败:', error);
+        return [];
+    }
+};
+
+// 删除钱包
+export const deleteWallet = (walletAddress) => {
+    try {
+        const walletsList = loadWalletsList();
+        const updatedList = walletsList.filter(wallet => wallet.address !== walletAddress);
+        saveWalletsList(updatedList);
+        
+        // 如果删除的是当前钱包，清空当前钱包信息
+        const currentWallet = loadWalletFromStorage();
+        if (currentWallet && currentWallet.address === walletAddress) {
+            uni.removeStorageSync(CONFIG.STORAGE_KEY);
+        }
+        
+        console.log('钱包已删除');
+        return true;
+    } catch (error) {
+        console.error('删除钱包失败:', error);
+        return false;
+    }
+};
+
+// 切换钱包
+export const switchWallet = (walletAddress) => {
+    try {
+        const walletsList = loadWalletsList();
+        const targetWallet = walletsList.find(wallet => wallet.address === walletAddress);
+        
+        if (targetWallet) {
+            saveWalletInfo(targetWallet);
+            console.log('钱包已切换');
+            return true;
+        } else {
+            console.error('未找到目标钱包');
+            return false;
+        }
+    } catch (error) {
+        console.error('切换钱包失败:', error);
+        return false;
+    }
+};
+
+// 更新钱包余额
+export const updateWalletBalance = async (walletAddress) => {
+    try {
+        const balance = await getWalletBalance(walletAddress);
+        const balanceUSD = await getWalletBalanceUSD(walletAddress);
+        
+        // 更新钱包列表中的余额
+        const walletsList = loadWalletsList();
+        const walletIndex = walletsList.findIndex(wallet => wallet.address === walletAddress);
+        
+        if (walletIndex !== -1) {
+            walletsList[walletIndex].balance = balance;
+            walletsList[walletIndex].balanceUSD = balanceUSD;
+            saveWalletsList(walletsList);
+        }
+        
+        // 如果是当前钱包，更新当前钱包信息
+        const currentWallet = loadWalletFromStorage();
+        if (currentWallet && currentWallet.address === walletAddress) {
+            currentWallet.balance = balance;
+            currentWallet.balanceUSD = balanceUSD;
+            saveWalletInfo(currentWallet);
+        }
+        
+        return { balance, balanceUSD };
+    } catch (error) {
+        console.error('更新钱包余额失败:', error);
+        return { balance: '0', balanceUSD: '0.00' };
+    }
+};
+
+// 验证以太坊地址
+export const isValidEthAddress = (address) => {
+    try {
+        const web3 = initWeb3();
+        return web3.utils.isAddress(address);
+    } catch (error) {
+        console.error('验证地址失败:', error);
+        return false;
     }
 };
 
 // 格式化地址显示
 export const formatAddress = (address) => {
     if (!address) return '';
-    if (address.length < 15) return address;
-    return `${address.slice(0, 15)}...${address.slice(-5)}`;
-}; 
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+};
+
+// 复制到剪贴板
+export const copyToClipboard = (text) => {
+    try {
+        uni.setClipboardData({
+            data: text,
+            success: () => {
+                uni.showToast({
+                    title: '已复制到剪贴板',
+                    icon: 'success'
+                });
+            },
+            fail: () => {
+                uni.showToast({
+                    title: '复制失败',
+                    icon: 'error'
+                });
+            }
+        });
+    } catch (error) {
+        console.error('复制失败:', error);
+    }
+};
+
+// ============== 新增的缺失函数 ==============
+
+// 格式化余额显示
+export const formatBalance = (balance) => {
+    try {
+        const num = parseFloat(balance);
+        if (isNaN(num)) return '0.0000';
+        
+        // 如果余额很小，显示更多小数位
+        if (num < 0.0001) {
+            return num.toFixed(8);
+        } else if (num < 1) {
+            return num.toFixed(6);
+        } else {
+            return num.toFixed(4);
+        }
+    } catch (error) {
+        console.error('格式化余额失败:', error);
+        return '0.0000';
+    }
+};
+
+// 计算代币价值
+export const calculateTokenValue = async (balance) => {
+    try {
+        const ethPrice = await getEthPrice();
+        const balanceFloat = parseFloat(balance);
+        
+        if (isNaN(balanceFloat) || balanceFloat <= 0) {
+            return '0.00';
+        }
+        
+        const value = balanceFloat * ethPrice;
+        
+        // 格式化价值显示
+        if (value < 0.01) {
+            return value.toFixed(6);
+        } else if (value < 1) {
+            return value.toFixed(4);
+        } else {
+            return value.toFixed(2);
+        }
+    } catch (error) {
+        console.error('计算代币价值失败:', error);
+        return '0.00';
+    }
+};
+
+// 创建新钱包 (别名函数，为了兼容)
+export const createNewWallet = () => {
+    try {
+        const mnemonic = bip39.generateMnemonic(wordlist);
+        const wallet = Wallet.fromMnemonic(mnemonic);
+        
+        const walletInfo = {
+            name: '主账户',
+            address: wallet.address,
+            privateKey: wallet.privateKey,
+            mnemonic: mnemonic,
+            balance: '0',
+            balanceUSD: '0.00',
+            createdAt: new Date().toISOString()
+        };
+        
+        return walletInfo;
+    } catch (error) {
+        console.error('创建新钱包失败:', error);
+        throw error;
+    }
+};
+
+// 从存储中加载钱包列表 (别名函数，为了兼容)
+export const loadWalletsFromStorage = loadWalletsList;
+
+// 保存钱包到存储 (别名函数，为了兼容)
+export const saveWalletToStorage = (walletInfo) => {
+    try {
+        // 保存当前钱包
+        saveWalletInfo(walletInfo);
+        
+        // 添加到钱包列表
+        const walletsList = loadWalletsList();
+        const existingIndex = walletsList.findIndex(w => w.address === walletInfo.address);
+        
+        if (existingIndex === -1) {
+            walletsList.unshift(walletInfo); // 添加到列表开头
+            saveWalletsList(walletsList);
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('保存钱包到存储失败:', error);
+        return false;
+    }
+};
+
+// 生成助记词
+export const generateMnemonic = () => {
+    try {
+        return bip39.generateMnemonic(wordlist);
+    } catch (error) {
+        console.error('生成助记词失败:', error);
+        throw error;
+    }
+};
+
+// 验证助记词
+export const validateMnemonic = (mnemonic) => {
+    try {
+        return bip39.validateMnemonic(mnemonic, wordlist);
+    } catch (error) {
+        console.error('验证助记词失败:', error);
+        return false;
+    }
+};
+
+// 获取gas价格
+export const getGasPrice = async () => {
+    try {
+        const web3 = initWeb3();
+        const gasPrice = await web3.eth.getGasPrice();
+        return gasPrice;
+    } catch (error) {
+        console.error('获取gas价格失败:', error);
+        return '20000000000'; // 默认20 Gwei
+    }
+};
+
+// 估算gas费用
+export const estimateGasFee = async (transaction) => {
+    try {
+        const web3 = initWeb3();
+        const gasEstimate = await web3.eth.estimateGas(transaction);
+        const gasPrice = await getGasPrice();
+        
+        const gasFee = web3.utils.fromWei((gasEstimate * gasPrice).toString(), 'ether');
+        return gasFee;
+    } catch (error) {
+        console.error('估算gas费用失败:', error);
+        return '0.001'; // 默认gas费用
+    }
+};
+
+// 获取网络状态
+export const getNetworkStatus = async () => {
+    try {
+        const web3 = initWeb3();
+        const isConnected = await web3.eth.net.isListening();
+        const networkId = await web3.eth.net.getId();
+        const blockNumber = await web3.eth.getBlockNumber();
+        
+        return {
+            connected: isConnected,
+            networkId: networkId,
+            blockNumber: blockNumber
+        };
+    } catch (error) {
+        console.error('获取网络状态失败:', error);
+        return {
+            connected: false,
+            networkId: null,
+            blockNumber: null
+        };
+    }
+};

@@ -1,4 +1,14 @@
 {
+  "name": "cross-chain-bridge",
+  "version": "1.0.0",
+  "description": "跨链桥CCB - Web3钱包应用",
+  "main": "main.js",
+  "scripts": {
+    "serve": "npm run dev:h5",
+    "dev:h5": "uni build --platform h5 --watch",
+    "build:h5": "uni build --platform h5",
+    "build": "npm run build:h5"
+  },
   "dependencies": {
     "@ethersproject/wallet": "^5.7.0",
     "@iconify-json/mdi": "^1.2.3",
@@ -18,6 +28,7 @@
     "stream-http": "^3.2.0",
     "tki-qrcode": "^0.1.6",
     "url": "^0.11.4",
+    "vue": "^3.0.0",
     "web3": "^1.10.0"
   },
   "devDependencies": {
@@ -25,5 +36,9 @@
     "vite": "^6.2.5",
     "webpack": "^5.99.1",
     "webpack-cli": "^6.0.1"
-  }
+  },
+  "browserslist": [
+    "Android >= 4.4",
+    "ios >= 9"
+  ]
 }

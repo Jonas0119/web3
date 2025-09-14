@@ -9,7 +9,7 @@ export const ICON_MAP = {
   copy: 'mdi:content-copy',
   qrcode: 'mdi:qr-code',
   wallet: 'mdi:wallet',
-  send: 'mdi:send',
+  send: 'mdi:chevron-right',
   receive: 'mdi:arrow-down-circle',
   alert: 'mdi:alert-circle',
   

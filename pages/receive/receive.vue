@@ -327,8 +327,11 @@ export default {
 
 /* 字体图标 */
 @font-face {
-	font-family: "iconfont";
-	src: url('data:font/woff2;charset=utf-8;base64,d09GMgABAAAAAAKEAAsAAAAABkQAAAI4AAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHFQGYACCcApcdgE2AiQDCAsGAAQgBYRnBzYbmQXIHpIkBQQKEQEEI4KA8fD/ft/2ufcebERoklk0TTxJNEQoJEKFRoMQCZFs3v/N/H0za8wk6h1NNGky87D58bmXpvhEQyRC0YQQCYl4JUKEePtv2gk0kGx+oFzmWh9wKfEApw1sEmVHJK7cIPaGMW7wAk8T6DWpJO1OTy/BvsJeJYgbN64E+xWHlVKJrhC65tgiXqpOT9ML8CJ+P/6bRfsktQx77eXN0Sj0/YQ8KxHzEhB8IMAWZKwChbhqTV2WCozL9Oo1VwH7Kgd+QpF9FcH+1YusBmhvgD/lST8hP5NSA5CagDzx6/JMnf0p/QQ/Hc63D+9nO+2T/dFwvttv7Vx8nm93Xk8/L/Zvj5/u9N9Pd/qzZ/Wt+fb22UYQvDp4tOLF6tbl9x+m6v77C3q/P+//+PYm+QZk/9WlB4Dp/QEjg0XyRwckz8rXgDcFun3mVyVA8fhbqc8IQP5zVoD8h+8/qQZV5tXrCqpkVUHXYkrQa1L5/H0mVeGYzXSCFbsAQ98nJF1fkPX9UEX8g2rQPzT1Q0KvU6R37DNlEFl6wRxwQvQMNWKqgvIGlX2DXJGKWr5ClBxDR7qQW+YUe8QucY9YzKUURSpHCTnALsF1cByGIYU8QY7QGJQKc5VEyYrXFe0NUwxELHoC5QBOEPIMykgm1YvfQMr8DORUiYW6eK8gkngY9NCkF8pN5lCmI3YvzL2kcS4KRSIpDkUgDmArBNfGYaE0EuTZj0OQQ9AYSCk4PhWJJNWrrOpvr7B/u0EvG2DkZjEjRY4SNbpxhNBo1AAAAA==') format('woff2');
+	font-family: 'Material Design Icons';
+	src: url('/static/materialdesignicons-webfont.woff2') format('woff2');
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
 }
 
 .iconfont {

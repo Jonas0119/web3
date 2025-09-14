@@ -3,10 +3,39 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "智慧账簿",
+				"navigationBarTitleText": "跨链桥CCB",
 				"navigationStyle": "custom",
 				"enablePullDownRefresh": true,
 				"backgroundTextStyle": "dark"
+			}
+		},
+		{
+			"path": "pages/market/market",
+			"style": {
+				"navigationBarTitleText": "市场行情",
+				"navigationStyle": "custom",
+				"enablePullDownRefresh": true
+			}
+		},
+		{
+			"path": "pages/market/exchange",
+			"style": {
+				"navigationBarTitleText": "币币兑换",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/community/community",
+			"style": {
+				"navigationBarTitleText": "社区",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/profile/profile",
+			"style": {
+				"navigationBarTitleText": "我的",
+				"navigationStyle": "custom"
 			}
 		},
 		{
@@ -61,9 +90,34 @@
 	],
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "智慧账簿",
+		"navigationBarTitleText": "跨链桥CCB",
 		"navigationBarBackgroundColor": "#FFFFFF",
 		"backgroundColor": "#F8F8F8"
+	},
+	"tabBar": {
+		"custom": true,
+		"color": "#7A7E83",
+		"selectedColor": "#4a8eff",
+		"borderStyle": "black",
+		"backgroundColor": "#ffffff",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "首页"
+			},
+			{
+				"pagePath": "pages/market/market",
+				"text": "市场"
+			},
+			{
+				"pagePath": "pages/community/community",
+				"text": "社区"
+			},
+			{
+				"pagePath": "pages/profile/profile",
+				"text": "我的"
+			}
+		]
 	},
 	"uniIdRouter": {}
 }
