@@ -25,6 +25,13 @@
 			}
 		},
 		{
+			"path": "pages/market/buy",
+			"style": {
+				"navigationBarTitleText": "买入",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/community/community",
 			"style": {
 				"navigationBarTitleText": "社区",
