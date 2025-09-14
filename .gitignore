@@ -5,9 +5,9 @@
 /unpackage
 
 # 忽略特定文件
-send_eth.js
 
 # 例外规则（保留Debug目录下的important.txt）
-/node_modules
-/node_modules
-/unpackage
+.hbuilderx/launch/h5.json
+.hbuilderx/project.json
+plugins/iconify.js.backup
+plugins/iconify.js.backup3
