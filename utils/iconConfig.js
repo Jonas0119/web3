@@ -69,7 +69,7 @@ export const ICON_THEMES = {
 
 // 获取主题颜色
 export const getThemeColor = (colorName, theme = 'light') => {
-  return ICON_THEMES[theme]?.[colorName] || ICON_THEMES.light[colorName] || '#4a8eff'
+  return (ICON_THEMES[theme] && ICON_THEMES[theme][colorName]) || ICON_THEMES.light[colorName] || '#4a8eff'
 }
 
 // 图标尺寸配置

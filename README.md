@@ -642,6 +642,169 @@ mounted() {
 
 现在助记词生成和显示功能应该能正常工作了。
 
+### 修复用户资料页面返回按钮导致页面消失问题
+
+#### 问题描述
+用户从社区页面跳转到用户资料页面后，点击返回按钮会导致整个页面消失，无法正常返回。
+
+#### 问题原因
+1. **TabBar页面栈特殊性**：从TabBar页面使用`navigateTo`跳转到非TabBar页面时，页面栈管理存在特殊性
+2. **页面栈结构异常**：TabBar页面和普通页面的页面栈管理机制不同，可能导致栈结构异常
+3. **返回逻辑不完善**：简单的`navigateBack()`无法处理复杂的页面栈情况
+
+#### 解决方案
+
+**1. 创建页面栈调试工具** (`utils/pageStackDebug.js`) ✅
+- 提供页面栈信息获取和分析功能
+- 实现智能返回逻辑，根据页面栈情况选择合适的返回方式
+- 添加页面栈健康检查功能
+- 提供安全的页面跳转方法
+
+**2. 修改用户资料页面** (`pages/community/user-profile.vue`) ✅
+- 导入页面栈调试工具
+- 使用智能返回逻辑替代简单的`navigateBack()`
+- 添加页面栈信息调试输出
+- 提供备用返回方案
+
+**3. 优化社区页面跳转** (`pages/community/community.vue`) ✅
+- 使用安全的页面跳转方法
+- 确保从TabBar页面跳转的稳定性
+
+#### 技术实现
+
+**智能返回逻辑**：
+```javascript
+export function smartNavigateBack() {
+  const stackInfo = getPageStackInfo()
+  
+  if (stackInfo.length <= 1) {
+    // 页面栈只有一个页面，跳转到社区页面
+    return uni.switchTab({
+      url: '/pages/community/community'
+    })
+  }
+  
+  // 检查上一个页面是否为TabBar页面
+  const previousPage = stackInfo.pages[stackInfo.length - 2]
+  if (previousPage && previousPage.isTabBar) {
+    // 上一个页面是TabBar页面，使用switchTab返回
+    return uni.switchTab({
+      url: previousPage.fullPath
+    })
+  }
+  
+  // 正常情况，使用navigateBack
+  return uni.navigateBack()
+}
+```
+
+**页面栈健康检查**：
+```javascript
+export function checkPageStackHealth() {
+  const stackInfo = getPageStackInfo()
+  const issues = []
+  
+  // 检查是否有重复的TabBar页面
+  const tabBarPages = stackInfo.pages.filter(page => page.isTabBar)
+  if (tabBarPages.length > 1) {
+    issues.push('页面栈中存在多个TabBar页面')
+  }
+  
+  // 检查页面栈是否过长
+  if (stackInfo.length > 10) {
+    issues.push('页面栈过长，可能存在内存泄漏')
+  }
+  
+  return {
+    healthy: issues.length === 0,
+    issues
+  }
+}
+```
+
+#### 修改文件
+- `utils/pageStackDebug.js` - 新建页面栈调试工具
+- `pages/community/user-profile.vue` - 修改返回逻辑
+- `pages/community/community.vue` - 优化跳转逻辑
+
+#### 功能特性
+- ✅ 智能页面栈分析
+- ✅ 自动选择最佳返回方式
+- ✅ 页面栈健康检查
+- ✅ 详细的调试信息输出
+- ✅ 备用返回方案
+- ✅ 支持TabBar页面特殊处理
+
+#### 测试方法
+1. 从社区页面点击用户头像进入用户资料页面
+2. 点击返回按钮，验证是否能正常返回
+3. 查看控制台输出的页面栈调试信息
+4. 测试不同页面栈情况下的返回行为
+
+#### 预期效果
+- 用户资料页面返回按钮能正常工作
+- 不会出现页面消失的问题
+- 提供详细的调试信息帮助问题排查
+- 支持各种页面栈情况的智能处理
+
+现在用户资料页面的返回功能应该能正常工作了，不会再出现页面消失的问题。
+
+### 修复社区页面帖子样式缩进问题
+
+#### 问题描述
+社区页面的帖子有左右缩进，不能占满屏幕宽度，影响视觉效果。
+
+#### 问题原因
+1. **帖子容器有内边距**：`.posts-container` 设置了 `padding: 20rpx 30rpx`
+2. **帖子项有圆角和边距**：`.post-item` 设置了 `border-radius: 24rpx` 和 `margin-bottom: 24rpx`
+3. **帖子内容有背景和边框**：`.post-content` 设置了背景色和边框
+
+#### 解决方案
+
+**1. 移除帖子容器左右内边距** ✅
+```css
+.posts-container {
+  flex: 1;
+  padding: 20rpx 0; /* 只保留上下内边距 */
+}
+```
+
+**2. 调整帖子项样式** ✅
+```css
+.post-item {
+  background-color: #ffffff;
+  border-radius: 0; /* 移除圆角 */
+  margin-bottom: 0; /* 移除底部边距 */
+  padding: 32rpx 30rpx; /* 保持左右内边距 */
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  border: none;
+  border-bottom: 1rpx solid #f0f0f0; /* 只保留底部边框 */
+}
+```
+
+**3. 简化帖子内容样式** ✅
+```css
+.post-content {
+  margin-bottom: 24rpx;
+  padding: 0; /* 移除内边距 */
+  background-color: transparent; /* 移除背景色 */
+  border-radius: 0; /* 移除圆角 */
+  border: none; /* 移除边框 */
+}
+```
+
+#### 修改效果
+- ✅ 帖子现在占满屏幕宽度
+- ✅ 移除了不必要的圆角和背景
+- ✅ 保持了合适的左右内边距（30rpx）
+- ✅ 使用底部边框分隔帖子
+- ✅ 整体视觉效果更加简洁统一
+
+#### 修改文件
+- `pages/community/community.vue` - 调整帖子相关样式
+
+现在社区页面的帖子样式已经优化，能够占满屏幕宽度，提供更好的视觉体验。
+
 ## 许可证
 
 MIT License

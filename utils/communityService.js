@@ -28,7 +28,7 @@ class CommunityService {
             this.currentUser = loadWalletFromStorage();
             
             // 初始化示例数据（仅在没有数据时）
-            this.initSampleData();
+            //this.initSampleData();
             
             console.log('社区服务初始化成功');
         } catch (error) {

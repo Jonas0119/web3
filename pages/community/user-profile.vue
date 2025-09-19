@@ -163,6 +163,7 @@
 import { IconWrapper } from '@/components/icons'
 import communityService from '@/utils/communityService.js'
 import { loadWalletFromStorage } from '@/utils/web3Utils.js'
+import { smartNavigateBack, getPageStackInfo } from '@/utils/pageStackDebug.js'
 
 export default {
   components: {
@@ -195,14 +196,27 @@ export default {
     }
   },
   onLoad() {
+    // 页面加载时检查页面栈健康状态
+    getPageStackInfo()
+    
     this.loadUserProfile()
     this.loadUserStats()
     this.loadMyPosts()
   },
   methods: {
-    // 返回上一页
+    // 返回上一页 - 使用智能返回逻辑
     goBack() {
-      uni.navigateBack()
+      // 先打印页面栈信息用于调试
+      getPageStackInfo()
+      
+      // 使用智能返回逻辑
+      smartNavigateBack().catch(error => {
+        console.error('返回失败:', error)
+        // 如果智能返回失败，使用备用方案
+        uni.switchTab({
+          url: '/pages/community/community'
+        })
+      })
     },
     
     // 加载用户资料

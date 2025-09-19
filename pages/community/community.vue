@@ -6,13 +6,13 @@
       <view class="header-actions">
         <icon-wrapper 
           name="mdi:magnify" 
-          :size="24" 
+          :size="30" 
           color="#666" 
           @click="showSearch = true"
         />
         <icon-wrapper 
           name="mdi:plus" 
-          :size="24" 
+          :size="30" 
           color="#4a8eff" 
           @click="showCreatePost = true"
         />
@@ -47,7 +47,6 @@
         :class="['filter-tab', { active: currentFilter === tab.key }]"
         @click="switchFilter(tab.key)"
       >
-        <icon-wrapper :name="tab.icon" :size="16" :color="currentFilter === tab.key ? '#4a8eff' : '#666'" />
         <text class="filter-text">{{ tab.label }}</text>
       </view>
     </view>
@@ -118,28 +117,20 @@
             <view class="action-button" @click="toggleLike(post)">
               <icon-wrapper 
                 :name="post.isLiked ? 'mdi:heart' : 'mdi:heart-outline'" 
-                :size="20" 
+                :size="18" 
                 :color="post.isLiked ? '#ff4757' : '#666'"
               />
               <text class="action-text">{{ post.isLiked ? '已赞' : '点赞' }}</text>
+              <text class="action-count">{{ post.likeCount }}</text>
             </view>
             <view class="action-button" @click="showComments(post)">
-              <icon-wrapper name="mdi:comment-outline" :size="20" color="#666" />
+              <icon-wrapper name="mdi:comment-outline" :size="18" color="#666" />
               <text class="action-text">评论</text>
+              <text class="action-count">{{ post.comments }}</text>
             </view>
             <view class="action-button" @click="sharePost(post)">
-              <icon-wrapper name="mdi:share-outline" :size="20" color="#666" />
+              <icon-wrapper name="mdi:share-outline" :size="18" color="#666" />
               <text class="action-text">分享</text>
-            </view>
-          </view>
-          <view class="post-stats">
-            <view class="stat-item">
-              <icon-wrapper name="mdi:heart" :size="16" color="#ff4757" />
-              <text class="stat-number">{{ post.likeCount }}</text>
-            </view>
-            <view class="stat-item">
-              <icon-wrapper name="mdi:comment" :size="16" color="#4a8eff" />
-              <text class="stat-number">{{ post.comments }}</text>
             </view>
           </view>
         </view>
@@ -230,6 +221,7 @@
 <script>
 import { IconWrapper } from '@/components/icons'
 import communityService from '@/utils/communityService.js'
+import { safeNavigateTo } from '@/utils/pageStackDebug.js'
 
 export default {
   components: {
@@ -567,16 +559,15 @@ export default {
       })
     },
     
-    // 跳转到用户资料
+    // 跳转到用户资料 - 使用安全跳转
     goToUserProfile(authorAddress) {
       // 添加触觉反馈
       uni.vibrateShort({
         type: 'light'
       });
       
-      uni.navigateTo({
-        url: '/pages/community/user-profile'
-      })
+      // 使用安全的页面跳转
+      safeNavigateTo('/pages/community/user-profile')
     },
     
     // 检查当前用户是否设置昵称
@@ -711,13 +702,19 @@ export default {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 24rpx;
+  gap: 48rpx; /* 再拉大间距 */
+  padding-right: 12rpx; /* 与右侧边缘留白 */
 }
 
 .header-actions icon-wrapper {
   padding: 8rpx;
   border-radius: 50%;
   transition: all 0.3s ease;
+}
+
+/* 兼容不支持 flex gap 的内核，确保两个icon有间距 */
+.header-actions icon-wrapper + icon-wrapper {
+  margin-left: 24rpx;
 }
 
 .header-actions icon-wrapper:active {
@@ -761,26 +758,28 @@ export default {
 /* 筛选标签 */
 .filter-tabs {
   display: flex;
-  padding: 24rpx 30rpx;
+  padding: 20rpx 30rpx; /* 与market保持一致 */
   background-color: #ffffff;
   border-bottom: 1rpx solid #e5e5e5;
   gap: 20rpx;
+}
+/* 兼容不支持 flex gap 的内核（如部分内置浏览器） */
+.filter-tab + .filter-tab {
+  margin-left: 16rpx;
 }
 
 .filter-tab {
   display: flex;
   align-items: center;
-  padding: 16rpx 28rpx;
-  border-radius: 50rpx;
-  background-color: #f8f9fa;
-  transition: all 0.3s ease;
-  border: 1rpx solid #e9ecef;
+  justify-content: center;
+  padding: 10rpx 20rpx;
+  border-radius: 20rpx;
+  background-color: #f5f5f5;
+  transition: all 0.2s ease;
 }
 
 .filter-tab.active {
   background-color: #4a8eff;
-  border-color: #4a8eff;
-  box-shadow: 0 2rpx 8rpx rgba(74, 142, 255, 0.3);
 }
 
 .filter-tab:active {
@@ -788,21 +787,20 @@ export default {
 }
 
 .filter-text {
-  margin-left: 12rpx;
-  font-size: 26rpx;
+  margin-left: 0;
+  font-size: 26rpx; /* 与market一致 */
   color: #666;
   font-weight: 500;
 }
 
 .filter-tab.active .filter-text {
   color: #ffffff;
-  font-weight: 600;
 }
 
 /* 帖子容器 */
 .posts-container {
   flex: 1;
-  padding: 20rpx 30rpx;
+  padding: 16rpx 0; /* 略微缩小上下留白 */
 }
 
 /* 空状态 */
@@ -834,12 +832,12 @@ export default {
 /* 帖子项 */
 .post-item {
   background-color: #ffffff;
-  border-radius: 24rpx;
-  margin-bottom: 24rpx;
-  padding: 32rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
-  border: 1rpx solid #f0f0f0;
-  transition: all 0.3s ease;
+  border-radius: 12rpx; /* 卡片四角小圆弧 */
+  margin-bottom: 12rpx; /* 两个帖子之间留一个很小的间隔 */
+  padding: 24rpx 24rpx; /* 内容更紧凑 */
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  border: 1rpx solid #f0f0f0; /* 轻边框提升卡片感 */
+  transition: all 0.2s ease;
 }
 
 .post-item:active {
@@ -919,10 +917,10 @@ export default {
 /* 帖子内容 */
 .post-content {
   margin-bottom: 24rpx;
-  padding: 24rpx;
-  background-color: #fafafa;
-  border-radius: 16rpx;
-  border: 1rpx solid #f0f0f0;
+  padding: 0;
+  background-color: transparent;
+  border-radius: 0;
+  border: none;
 }
 
 .post-text {
@@ -952,22 +950,26 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 20rpx;
+  padding-top: 8rpx; /* 更靠近上方灰线 */
+  margin-top: -6rpx; /* 视觉上更贴近分割线 */
   border-top: 1rpx solid #f0f0f0;
 }
 
 .action-buttons {
   display: flex;
-  gap: 30rpx;
+  width: 100%;
 }
 
 .action-button {
+  flex: 1; /* 三项等分 */
   display: flex;
-  align-items: center;
-  padding: 12rpx 20rpx;
+  align-items: center; /* 垂直居中对齐 */
+  justify-content: center;
+  padding: 6rpx 4rpx; /* 进一步压缩整体高度与宽度 */
   border-radius: 50rpx;
-  transition: all 0.3s;
+  transition: all 0.2s;
   background-color: transparent;
+  cursor: pointer; /* H5 悬停提示可点击 */
 }
 
 .action-button:active {
@@ -976,16 +978,28 @@ export default {
 }
 
 .action-text {
-  margin-left: 8rpx;
-  font-size: 24rpx;
+  margin-left: 6rpx;
+  font-size: 20rpx; /* 再小一点 */
   color: #666;
   font-weight: 500;
+  line-height: 1; /* 与数字对齐 */
 }
 
-.post-stats {
-  display: flex;
-  gap: 20rpx;
-  align-items: center;
+.action-count {
+  margin-left: 4rpx;
+  font-size: 20rpx; /* 与文字一致的小号 */
+  color: #4a8eff;
+  line-height: 1; /* 与文字对齐 */
+}
+
+/* 右侧独立统计已并入按钮内部，移除此块 */
+
+/* 悬停与按下状态，增强可点击感（H5有效） */
+.action-button:hover {
+  background-color: #f5f7fa;
+}
+.action-button:active {
+  transform: scale(0.98);
 }
 
 .stat-item {
