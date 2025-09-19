@@ -7,14 +7,6 @@
       :class="{ active: currentIndex === index }"
       @click="switchTab(index)"
     >
-      <view class="icon-container">
-        <image 
-          :src="currentIndex === index ? item.activeIcon : item.icon"
-          class="tab-icon"
-          :class="{ active: currentIndex === index }"
-          mode="aspectFit"
-        />
-      </view>
       <text class="tab-text" :class="{ active: currentIndex === index }">{{ item.text }}</text>
     </view>
   </view>
@@ -29,26 +21,18 @@ export default {
       tabList: [
         {
           pagePath: '/pages/index/index',
-          icon: require('@/static/icons/home.svg'),
-          activeIcon: require('@/static/icons/home-active.svg'),
           text: '首页'
         },
         {
           pagePath: '/pages/market/market',
-          icon: require('@/static/icons/market.svg'),
-          activeIcon: require('@/static/icons/market-active.svg'),
           text: '市场'
         },
         {
           pagePath: '/pages/community/community',
-          icon: require('@/static/icons/community.svg'),
-          activeIcon: require('@/static/icons/community-active.svg'),
           text: '社区'
         },
         {
           pagePath: '/pages/profile/profile',
-          icon: require('@/static/icons/profile.svg'),
-          activeIcon: require('@/static/icons/profile-active.svg'),
           text: '我的'
         }
       ]
@@ -56,16 +40,6 @@ export default {
   },
   mounted() {
     console.log('CustomTabBar mounted, tabList:', this.tabList)
-    // 调试图标路径
-    this.tabList.forEach((item, index) => {
-      console.log(`Tab ${index}:`, {
-        text: item.text,
-        icon: item.icon,
-        activeIcon: item.activeIcon,
-        iconType: typeof item.icon,
-        activeIconType: typeof item.activeIcon
-      })
-    })
   },
   methods: {
     switchTab(index) {
@@ -127,12 +101,13 @@ export default {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 120rpx;
+  height: 110rpx;
   background-color: #ffffff;
   border-top: 2rpx solid #e5e5e5;
   display: flex;
   z-index: 1000;
   box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.15);
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB', 'Microsoft Yahei', sans-serif;
 }
 
 .tab-item {
@@ -141,10 +116,10 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 15rpx 0;
+  padding: 0;
   transition: all 0.3s ease;
   cursor: pointer;
-  min-height: 120rpx;
+  min-height: 110rpx;
 }
 
 .tab-item.active {
@@ -152,30 +127,10 @@ export default {
   background-color: rgba(74, 142, 255, 0.05);
 }
 
-.icon-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8rpx;
-  width: 60rpx;
-  height: 60rpx;
-  border-radius: 50%;
-  background-color: transparent;
-}
-
-.tab-icon {
-  transition: all 0.3s ease;
-  display: block;
-  width: 48rpx;
-  height: 48rpx;
-}
-
-.tab-icon.active {
-  transform: scale(1.1);
-}
+/* 已移除图标相关样式 */
 
 .tab-text {
-  font-size: 28rpx;
+  font-size: 36rpx;
   color: #7A7E83;
   transition: color 0.3s ease;
   text-align: center;
